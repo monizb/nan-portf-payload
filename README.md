@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nanditha C P — Portfolio
 
-## Getting Started
+Next.js 15 + Payload CMS 3 + Three.js scroll animation portfolio.
 
-First, run the development server:
+## Quick Start
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- **Site**: http://localhost:3000
+- **Admin**: http://localhost:3000/admin
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Seed Data
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run seed
+```
 
-## Learn More
+Creates admin user (`admin@nandithacp.com` / `changeme123`) and sample case studies.
 
-To learn more about Next.js, take a look at the following resources:
+### Required Assets
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**GLB Model**: Place `Sprint.glb` in `public/` for the scroll animation.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Fonts** in `public/fonts/`:
+- `HaasGrotDispTrial-65Medium.woff2`, `HaasGrotDispTrial-75Bold.woff2`
+- `SFProText-Regular.woff2`, `SFProText-Medium.woff2`, `SFProText-Semibold.woff2`
 
-## Deploy on Vercel
+## Cloudflare Deployment
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+wrangler d1 create nanditha-portfolio-db
+wrangler r2 bucket create nanditha-portfolio-media
+# Update wrangler.toml with database_id
+wrangler secret put PAYLOAD_SECRET
+npm run build && wrangler deploy
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Configure R2 credentials in `.env` for media storage.
