@@ -23,12 +23,23 @@ interface HomeClientProps {
 }
 
 export default function HomeClient({ children, glbUrl }: HomeClientProps) {
+  const [isAnimationComplete, setIsAnimationComplete] = useState(false)
+
+  const handleAnimationComplete = useCallback(() => {
+    setIsAnimationComplete(true)
+  }, [])
+
   return (
     <>
-      <ScrollAnimation glbUrl={glbUrl} />
+      <ScrollAnimation glbUrl={glbUrl} onAnimationComplete={handleAnimationComplete} />
       
       {/* Main portfolio content flows naturally after the animation runway */}
-      <div className="relative bg-white z-10">
+      <div
+        className={`relative bg-white z-10 transition-opacity duration-700 ${
+          isAnimationComplete ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden={!isAnimationComplete}
+      >
         {children}
       </div>
     </>

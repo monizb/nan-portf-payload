@@ -30,7 +30,7 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     const scrollSection = containerRef.current!
     const stableVH = window.innerHeight
     const sectionHeight = scrollSection.offsetHeight
-    const maxScroll = sectionHeight - stableVH
+    const maxScroll = Math.max(1, sectionHeight - stableVH)
 
     let targetProgress = 0
     let currentProgress = 0
@@ -66,6 +66,7 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 0.75
+    renderer.setClearColor('#D97757')
     canvasContainerRef.current.appendChild(renderer.domElement)
 
     let camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
@@ -74,10 +75,19 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
       0.1,
       1000
     )
+    camera.position.set(0, 1.2, 6)
+    camera.lookAt(0, 1, 0)
     let mixer: THREE.AnimationMixer | null = null
     let animationDuration = 0
     let glbCamera: THREE.PerspectiveCamera | null = null
     const actions: THREE.AnimationAction[] = []
+
+    // Add fallback lighting for models without baked lights.
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0)
+    directionalLight.position.set(4, 7, 6)
+    scene.add(ambientLight)
+    scene.add(directionalLight)
 
     // Load GLB
     const dracoLoader = new DRACOLoader()
@@ -86,57 +96,77 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     const loader = new GLTFLoader()
     loader.setDRACOLoader(dracoLoader)
 
-    loader.load(glbUrl, (gltf) => {
-      scene.add(gltf.scene)
+    const loadModel = (url: string, hasRetried = false) => {
+      loader.load(
+        url,
+        (gltf) => {
+          scene.add(gltf.scene)
 
-      gltf.scene.traverse((child) => {
-        if (child.name === TARGET_CAMERA || child.name.includes(TARGET_CAMERA)) {
-          if ((child as THREE.Camera).isCamera) {
-            glbCamera = child as THREE.PerspectiveCamera
-          } else {
-            child.traverse((sub) => {
-              if ((sub as THREE.Camera).isCamera) glbCamera = sub as THREE.PerspectiveCamera
+          gltf.scene.traverse((child) => {
+            if (child.name === TARGET_CAMERA || child.name.includes(TARGET_CAMERA)) {
+              if ((child as THREE.Camera).isCamera) {
+                glbCamera = child as THREE.PerspectiveCamera
+              } else {
+                child.traverse((sub) => {
+                  if ((sub as THREE.Camera).isCamera) glbCamera = sub as THREE.PerspectiveCamera
+                })
+              }
+            }
+            if ((child as THREE.Camera).isCamera && !glbCamera) glbCamera = child as THREE.PerspectiveCamera
+            if ((child as THREE.Mesh).isMesh) {
+              const mesh = child as THREE.Mesh
+              if (mesh.material) (mesh.material as THREE.Material).side = THREE.DoubleSide
+              mesh.frustumCulled = false
+            }
+          })
+
+          if (!glbCamera && gltf.cameras.length > 0) {
+            glbCamera = (gltf.cameras.find((c) => c.name.includes(TARGET_CAMERA)) ||
+              gltf.cameras[0]) as THREE.PerspectiveCamera
+          }
+
+          if (glbCamera) {
+            glbCamera.aspect = window.innerWidth / window.innerHeight
+            glbCamera.near = 0.01
+            glbCamera.far = 1000
+            glbCamera.updateProjectionMatrix()
+            camera = glbCamera
+          }
+
+          if (gltf.animations.length > 0) {
+            mixer = new THREE.AnimationMixer(gltf.scene)
+            gltf.animations.forEach((clip) => {
+              const action = mixer!.clipAction(clip)
+              action.setLoop(THREE.LoopOnce, 1)
+              action.clampWhenFinished = true
+              action.paused = true
+              action.play()
+              actions.push(action)
             })
+            animationDuration = Math.max(...gltf.animations.map((a) => a.duration))
+          }
+
+          setTimeout(() => {
+            if (scrollHintRef.current) scrollHintRef.current.style.opacity = '0'
+          }, 3000)
+        },
+        undefined,
+        () => {
+          if (!hasRetried && url !== '/Sprint.glb') {
+            loadModel('/Sprint.glb', true)
+            return
+          }
+          if (scrollHintRef.current) {
+            scrollHintRef.current.style.opacity = '1'
+            scrollHintRef.current.innerHTML =
+              '<span class="whitespace-nowrap text-[11px] font-medium tracking-[0.13em] text-white font-sans">MODEL LOAD FAILED</span>'
           }
         }
-        if ((child as THREE.Camera).isCamera && !glbCamera) glbCamera = child as THREE.PerspectiveCamera
-        if ((child as THREE.Mesh).isMesh) {
-          const mesh = child as THREE.Mesh
-          if (mesh.material) (mesh.material as THREE.Material).side = THREE.DoubleSide
-          mesh.frustumCulled = false
-        }
-      })
+      )
+    }
 
-      if (!glbCamera && gltf.cameras.length > 0) {
-        glbCamera = (gltf.cameras.find((c) => c.name.includes(TARGET_CAMERA)) ||
-          gltf.cameras[0]) as THREE.PerspectiveCamera
-      }
-
-      if (glbCamera) {
-        glbCamera.aspect = window.innerWidth / window.innerHeight
-        glbCamera.near = 0.01
-        glbCamera.far = 1000
-        glbCamera.updateProjectionMatrix()
-        camera = glbCamera
-      }
-
-      if (gltf.animations.length > 0) {
-        mixer = new THREE.AnimationMixer(gltf.scene)
-        gltf.animations.forEach((clip) => {
-          const action = mixer!.clipAction(clip)
-          action.setLoop(THREE.LoopOnce, 1)
-          action.clampWhenFinished = true
-          action.paused = true
-          action.play()
-          actions.push(action)
-        })
-        animationDuration = Math.max(...gltf.animations.map((a) => a.duration))
-      }
-
-      setTimeout(() => {
-        if (scrollHintRef.current) scrollHintRef.current.style.opacity = '0'
-      }, 3000)
-    })
+    loadModel(glbUrl)
+    onScroll()
 
     // Render loop
     const savedPos = new THREE.Vector3()
