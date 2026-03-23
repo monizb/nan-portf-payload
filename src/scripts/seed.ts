@@ -1,5 +1,31 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const filename = fileURLToPath(import.meta.url)
+const dirname = path.dirname(filename)
+
+const defaultRichTextContent = {
+  root: {
+    children: [
+      {
+        type: 'paragraph',
+        children: [
+          {
+            type: 'text',
+            text: 'This case study content was seeded automatically.',
+          },
+        ],
+      },
+    ],
+    direction: 'ltr',
+    format: '',
+    indent: 0,
+    type: 'root',
+    version: 1,
+  },
+}
 
 async function seed() {
   const payload = await getPayload({ config })
@@ -210,7 +236,44 @@ async function seed() {
     hiddenHeadings: [],
   }
 
-  const allStudies = [...workStudies, ...studioStudies, blogStudy]
+  const sampleImageFiles = [
+    'work-1.svg',
+    'work-2.svg',
+    'work-3.svg',
+    'work-4.svg',
+    'studio-1.svg',
+    'studio-2.svg',
+    'studio-3.svg',
+  ]
+
+  const mediaIDs: Array<number | string> = []
+
+  for (const imageFile of sampleImageFiles) {
+    const existingMedia = await payload.find({
+      collection: 'media',
+      where: { alt: { equals: imageFile } },
+      limit: 1,
+    })
+
+    if (existingMedia.docs.length > 0) {
+      mediaIDs.push(existingMedia.docs[0]!.id)
+      continue
+    }
+
+    const createdMedia = await payload.create({
+      collection: 'media',
+      data: { alt: imageFile },
+      filePath: path.resolve(dirname, '../../public/samples', imageFile),
+    })
+
+    mediaIDs.push(createdMedia.id)
+  }
+
+  const allStudies = [...workStudies, ...studioStudies, blogStudy].map((study, index) => ({
+    ...study,
+    content: 'content' in study ? study.content : defaultRichTextContent,
+    featuredImage: mediaIDs[index % mediaIDs.length],
+  }))
 
   for (const study of allStudies) {
     try {
