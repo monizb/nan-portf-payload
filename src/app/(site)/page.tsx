@@ -22,6 +22,52 @@ function getImageUrl(img: unknown): { url: string; alt: string; width: number; h
   return { url: PLACEHOLDER, alt: '', width: 800, height: 450 }
 }
 
+type SpeakingViewData = {
+  leftImage: unknown
+  rightImage: unknown
+  rightCaption: string
+}
+
+function getSpeakingViewData(speakingImages: unknown): SpeakingViewData {
+  const defaultCaption = '80% of what you build will never be used.\nWhy engineers need to understand design.'
+
+  if (Array.isArray(speakingImages) && speakingImages.length > 0) {
+    const cards = speakingImages as Array<{ image?: unknown; caption?: string }>
+    const rightCard = cards.find((item) => item.caption && item.caption.trim().length > 0)
+      ?? cards[0]
+      ?? { image: null, caption: '' }
+    const leftCard = cards.find((item) => item !== rightCard)
+      ?? cards[1]
+      ?? { image: null, caption: '' }
+
+    return {
+      leftImage: leftCard.image ?? null,
+      rightImage: rightCard.image ?? null,
+      rightCaption: rightCard.caption || defaultCaption,
+    }
+  }
+
+  if (speakingImages && typeof speakingImages === 'object') {
+    const group = speakingImages as {
+      leftSlimImage?: unknown
+      rightFeatureImage?: unknown
+      rightCaption?: string
+    }
+
+    return {
+      leftImage: group.leftSlimImage ?? null,
+      rightImage: group.rightFeatureImage ?? null,
+      rightCaption: group.rightCaption || defaultCaption,
+    }
+  }
+
+  return {
+    leftImage: null,
+    rightImage: null,
+    rightCaption: defaultCaption,
+  }
+}
+
 export default async function Home() {
   const payload = await getPayloadClient()
 
@@ -74,13 +120,13 @@ export default async function Home() {
     aboutDescription?: string
     aboutImage?: unknown
     speakingTitle?: string
-    speakingImages?: Array<{ image: unknown; caption?: string }>
+    speakingImages?: unknown
     footerQuote?: string
     email?: string
     glbModelUrl?: string
   } = {}
   try {
-    settings = (await payload.findGlobal({ slug: 'site-settings' })) as typeof settings
+    settings = (await payload.findGlobal({ slug: 'site-settings', depth: 2 })) as typeof settings
   } catch {
     // Not configured yet
   }
@@ -112,6 +158,7 @@ export default async function Home() {
 
   const displayWork = workStudies.length > 0 ? workStudies : sampleWork
   const displayStudio = studioStudies.length > 0 ? studioStudies : sampleStudio
+  const speakingViewData = getSpeakingViewData(settings.speakingImages)
 
   return (
     <HomeClient glbUrl={glbUrl}>
@@ -223,8 +270,8 @@ export default async function Home() {
           </div>
 
           {/* About row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 items-center">
-            <div className="rounded-xl overflow-hidden bg-gray-50 aspect-[4/3] relative">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-16 items-start">
+            <div className="rounded-xl overflow-hidden bg-gray-50 aspect-[4/2] relative">
               {settings.aboutImage ? (
                 <Image
                   src={getImageUrl(settings.aboutImage).url}
@@ -237,7 +284,7 @@ export default async function Home() {
                 <div className="absolute inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-blue-900" />
               )}
             </div>
-            <div className="py-8">
+            <div>
               <p className="text-[13px] text-gray-400 font-medium mb-3">{aboutTitle}</p>
               <h3 className="text-2xl md:text-3xl font-display leading-snug whitespace-pre-line">
                 {aboutDesc}
@@ -255,38 +302,48 @@ export default async function Home() {
       {/* Thoughtcloud / Speaking Section */}
       <section className="py-20 px-6" id="thoughtcloud">
         <div className="max-w-350 mx-auto">
-          <h2 className="text-3xl md:text-[2.5rem] leading-[1.15] font-display mb-12">
+          <h2 className="text-[40px] leading-[1.15] font-display mb-12">
             {speakingTitle}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {(settings.speakingImages && settings.speakingImages.length > 0
-              ? settings.speakingImages
-              : [
-                  { image: null, caption: '80% of what you build will never be used.\nWhy engineers need to understand design.' },
-                  { image: null, caption: '' },
-                ]
-            ).map((item, i) => (
-              <div key={i} className="relative rounded-xl overflow-hidden bg-gray-100 aspect-[4/3]">
-                {item.image ? (
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-stretch md:h-136">
+            <div className="md:col-span-3">
+              <div className="relative rounded-xl overflow-hidden bg-gray-100 min-h-80 md:min-h-0 h-full">
+                {speakingViewData.leftImage ? (
                   <Image
-                    src={getImageUrl(item.image).url}
-                    alt={item.caption || 'Speaking event'}
+                    src={getImageUrl(speakingViewData.leftImage).url}
+                    alt="Speaking event"
                     fill
                     className="object-cover"
-                    sizes="50vw"
+                    sizes="25vw"
                   />
                 ) : (
                   <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
                 )}
-                {item.caption && (
+              </div>
+            </div>
+
+            <div className="md:col-span-9">
+              <div className="relative rounded-xl overflow-hidden bg-gray-100 min-h-96 md:min-h-0 h-full">
+                {speakingViewData.rightImage ? (
+                  <Image
+                    src={getImageUrl(speakingViewData.rightImage).url}
+                    alt={speakingViewData.rightCaption || 'Speaking event'}
+                    fill
+                    className="object-cover"
+                    sizes="75vw"
+                  />
+                ) : (
+                  <div className="absolute inset-0 bg-gradient-to-br from-gray-200 to-gray-300" />
+                )}
+                {speakingViewData.rightCaption && (
                   <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/60 to-transparent">
-                    <p className="text-white text-[15px] font-medium whitespace-pre-line">
-                      {item.caption}
+                    <p className="text-white text-[30px] font-medium whitespace-pre-line">
+                      {speakingViewData.rightCaption}
                     </p>
                   </div>
                 )}
               </div>
-            ))}
+            </div>
           </div>
         </div>
       </section>

@@ -58,17 +58,35 @@ export const SiteSettings: GlobalConfig = {
     },
     {
       name: 'speakingImages',
-      type: 'array',
+      label: 'Speaking Section Media',
+      type: 'group',
       fields: [
         {
-          name: 'image',
+          name: 'leftSlimImage',
+          label: 'Left Slim Image',
           type: 'upload',
           relationTo: 'media',
-          required: true,
+          admin: {
+            description: 'Narrow portrait image shown on the left side of the Speaking section.',
+          },
         },
         {
-          name: 'caption',
-          type: 'text',
+          name: 'rightFeatureImage',
+          label: 'Right Feature Image',
+          type: 'upload',
+          relationTo: 'media',
+          admin: {
+            description: 'Main wide image shown on the right side with caption overlay.',
+          },
+        },
+        {
+          name: 'rightCaption',
+          label: 'Right Image Caption',
+          type: 'textarea',
+          defaultValue: '80% of what you build will never be used.\nWhy engineers need to understand design.',
+          admin: {
+            description: 'Caption text shown over the right image.',
+          },
         },
       ],
     },
