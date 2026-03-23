@@ -46,19 +46,24 @@ export default function BlogSidebar({ hiddenHeadings = [] }: BlogSidebarProps) {
 
     setHeadings(extracted)
 
+    // Only observe headings that are visible in the sidebar
+    const visibleIds = new Set(extracted.map((h) => h.id))
+
     // Intersection observer for active heading
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
-          if (entry.isIntersecting) {
+          if (entry.isIntersecting && visibleIds.has(entry.target.id)) {
             setActiveId(entry.target.id)
           }
         }
       },
-      { rootMargin: '-80px 0px -60% 0px', threshold: 0 }
+      { rootMargin: '-100px 0px -60% 0px', threshold: 0 }
     )
 
-    headingEls.forEach((el) => observer.observe(el))
+    headingEls.forEach((el) => {
+      if (visibleIds.has(el.id)) observer.observe(el)
+    })
     return () => observer.disconnect()
   }, [hiddenHeadings])
 
