@@ -101,7 +101,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
       <Navbar />
       <main className="pt-28 pb-20 px-6">
         <div className="max-w-350 mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[220px_1fr] gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-12">
             {/* Sticky sidebar */}
             <aside className="hidden lg:block">
               <div className="sticky top-28">
@@ -110,7 +110,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
             </aside>
 
             {/* Main content */}
-            <article className="max-w-[720px]">
+            <article className="min-w-0">
               {/* Back button */}
               <Link
                 href="/work"
