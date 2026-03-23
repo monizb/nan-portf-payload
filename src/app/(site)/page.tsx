@@ -119,12 +119,12 @@ export default async function Home() {
 
       {/* Hero Section */}
       <section className="pt-28 pb-16 px-6" id="hero">
-        <div className="max-w-[1200px] mx-auto">
-          <h1 className="text-[40px] leading-[1.1] tracking-[-0.03em] font-display max-w-4xl">
+        <div className="max-w-350 mx-auto">
+          <h1 className="text-[40px]! leading-[1.1] tracking-[-0.03em] font-display max-w-2xl">
             {heroTitle}
           </h1>
-          <div className="flex items-center justify-between mt-4">
-            <p className="text-[15px]" style={{ color: 'var(--color-terracotta)' }}>
+          <div className="flex items-center justify-between mt-0">
+            <p className="text-[20px]" style={{ color: 'var(--color-terracotta)' }}>
               {heroSubtitle}
             </p>
             <SectionButton href="/#beyond" label="Beyond the work" />
@@ -149,9 +149,9 @@ export default async function Home() {
 
       {/* Work Section */}
       <section className="py-20 px-6" id="work">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <div className="flex items-start justify-between mb-12">
-            <h2 className="text-3xl md:text-[2.5rem] leading-[1.15] font-display max-w-lg">
+            <h2 className="text-[40px] leading-[1.15] font-display">
               {workTitle}
             </h2>
             <SectionButton href="/work" label="All work" />
@@ -174,7 +174,7 @@ export default async function Home() {
 
       {/* Studio Section */}
       <section className="py-20 px-6" id="studio">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <div className="flex items-start justify-between mb-12">
             <h2 className="text-3xl md:text-[2.5rem] leading-[1.15] font-display max-w-lg">
               {studioTitle}
@@ -254,7 +254,7 @@ export default async function Home() {
 
       {/* Thoughtcloud / Speaking Section */}
       <section className="py-20 px-6" id="thoughtcloud">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <h2 className="text-3xl md:text-[2.5rem] leading-[1.15] font-display mb-12">
             {speakingTitle}
           </h2>

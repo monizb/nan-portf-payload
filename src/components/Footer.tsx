@@ -12,7 +12,7 @@ export default function Footer({
   return (
     <footer className="relative overflow-hidden">
       {/* Quote section */}
-      <div className="max-w-[1200px] mx-auto px-6 py-24 text-center">
+      <div className="max-w-350 mx-auto px-6 py-24 text-center">
         <h2 className="text-3xl md:text-[2.75rem] leading-[1.2] font-display max-w-2xl mx-auto">
           {quote}
         </h2>

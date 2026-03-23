@@ -58,7 +58,7 @@ export default async function WorkPage() {
     <>
       <Navbar />
       <main className="pt-28 pb-20 px-6">
-        <div className="max-w-[1200px] mx-auto">
+        <div className="max-w-350 mx-auto">
           <h1 className="text-3xl md:text-[2.75rem] leading-[1.15] font-display mb-4">
             Designed by a human. Inspired by everything else.
           </h1>
