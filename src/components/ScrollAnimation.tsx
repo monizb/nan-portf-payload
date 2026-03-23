@@ -7,38 +7,88 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js'
 
 interface ScrollAnimationProps {
   glbUrl: string
+  active: boolean
   onAnimationComplete?: () => void
 }
 
-export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollAnimationProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
+export default function ScrollAnimation({ glbUrl, active, onAnimationComplete }: ScrollAnimationProps) {
   const canvasContainerRef = useRef<HTMLDivElement>(null)
   const progressBarRef = useRef<HTMLDivElement>(null)
   const scrollHintRef = useRef<HTMLDivElement>(null)
   const hasCompletedRef = useRef(false)
   const cleanupRef = useRef<(() => void) | null>(null)
+  const resetScrollRef = useRef<(() => void) | null>(null)
+  // Shared mutable ref so the wheel handler always sees the latest active state
+  const activeRef = useRef(active)
+  const sceneReadyRef = useRef(false)
+
+  // Keep activeRef in sync
+  useEffect(() => {
+    activeRef.current = active
+
+    if (active) {
+      // Entering animation mode: reset scroll to start, lock body scroll, show canvas
+      resetScrollRef.current?.()  // rewind virtualScroll/progress to 0 so completion doesn't fire instantly
+      hasCompletedRef.current = false
+      document.body.style.overflow = 'hidden'
+      document.body.classList.add('animation-active')
+      if (canvasContainerRef.current) canvasContainerRef.current.style.display = ''
+      if (progressBarRef.current) progressBarRef.current.style.display = ''
+    } else {
+      // Leaving animation mode: unlock body scroll, hide canvas
+      document.body.style.overflow = ''
+      document.body.classList.remove('animation-active')
+      if (canvasContainerRef.current) canvasContainerRef.current.style.display = 'none'
+      if (progressBarRef.current) progressBarRef.current.style.display = 'none'
+    }
+  }, [active])
 
   const initScene = useCallback(() => {
-    if (!canvasContainerRef.current) return
+    if (!canvasContainerRef.current || sceneReadyRef.current) return
+    sceneReadyRef.current = true
 
     const isMobile = window.innerWidth < 768
     const TARGET_CAMERA = 'DutchCamera001'
 
-    // Set body terracotta background to prevent white flash
+    document.body.style.overflow = 'hidden'
     document.body.classList.add('animation-active')
 
-    const scrollSection = containerRef.current!
-    const stableVH = window.innerHeight
-    const sectionHeight = scrollSection.offsetHeight
-    const maxScroll = Math.max(1, sectionHeight - stableVH)
-
+    // Virtual scroll progress driven by wheel / touch delta
+    const VIRTUAL_SCROLL_LENGTH = 4000
+    let virtualScroll = 0
     let targetProgress = 0
     let currentProgress = 0
 
-    const onScroll = () => {
-      targetProgress = Math.max(0, Math.min(1, window.scrollY / maxScroll))
+    // Expose a reset so the active useEffect can rewind to the start
+    resetScrollRef.current = () => {
+      virtualScroll = 0
+      targetProgress = 0
+      currentProgress = 0
     }
-    window.addEventListener('scroll', onScroll, { passive: true })
+
+    const onWheel = (e: WheelEvent) => {
+      if (!activeRef.current) return // don't intercept when inactive
+      e.preventDefault()
+      virtualScroll = Math.max(0, Math.min(VIRTUAL_SCROLL_LENGTH, virtualScroll + e.deltaY))
+      targetProgress = virtualScroll / VIRTUAL_SCROLL_LENGTH
+    }
+
+    let touchStartY = 0
+    const onTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY
+    }
+    const onTouchMove = (e: TouchEvent) => {
+      if (!activeRef.current) return
+      e.preventDefault()
+      const delta = touchStartY - e.touches[0].clientY
+      touchStartY = e.touches[0].clientY
+      virtualScroll = Math.max(0, Math.min(VIRTUAL_SCROLL_LENGTH, virtualScroll + delta * 2))
+      targetProgress = virtualScroll / VIRTUAL_SCROLL_LENGTH
+    }
+
+    window.addEventListener('wheel', onWheel, { passive: false })
+    window.addEventListener('touchstart', onTouchStart, { passive: true })
+    window.addEventListener('touchmove', onTouchMove, { passive: false })
 
     // Mouse tracking (parallax)
     const mouse = { x: 0, y: 0, tx: 0, ty: 0 }
@@ -66,7 +116,6 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     renderer.outputColorSpace = THREE.SRGBColorSpace
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 0.75
-    renderer.setClearColor('#D97757')
     canvasContainerRef.current.appendChild(renderer.domElement)
 
     let camera: THREE.PerspectiveCamera = new THREE.PerspectiveCamera(
@@ -75,21 +124,10 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
       0.1,
       1000
     )
-    camera.position.set(0, 1.2, 6)
-    camera.lookAt(0, 1, 0)
     let mixer: THREE.AnimationMixer | null = null
     let animationDuration = 0
     let glbCamera: THREE.PerspectiveCamera | null = null
-    const actions: THREE.AnimationAction[] = []
 
-    // Add fallback lighting for models without baked lights.
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9)
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1.0)
-    directionalLight.position.set(4, 7, 6)
-    scene.add(ambientLight)
-    scene.add(directionalLight)
-
-    // Load GLB
     const dracoLoader = new DRACOLoader()
     dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/')
 
@@ -139,9 +177,7 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
               const action = mixer!.clipAction(clip)
               action.setLoop(THREE.LoopOnce, 1)
               action.clampWhenFinished = true
-              action.paused = true
               action.play()
-              actions.push(action)
             })
             animationDuration = Math.max(...gltf.animations.map((a) => a.duration))
           }
@@ -166,7 +202,6 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     }
 
     loadModel(glbUrl)
-    onScroll()
 
     // Render loop
     const savedPos = new THREE.Vector3()
@@ -184,37 +219,31 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
       if (time - lastTime < 16) return
       lastTime = time
 
+      // Always lerp toward target so the animation stays smooth
       currentProgress = lerp(currentProgress, targetProgress, 0.05)
       if (Math.abs(currentProgress - targetProgress) < 0.005) {
         currentProgress = targetProgress
       }
 
-      // Check if animation is complete (>98%) for transition
-      if (currentProgress > 0.98 && !hasCompletedRef.current) {
+      // Only fire completion when active and progress > 98%
+      if (activeRef.current && currentProgress > 0.98 && !hasCompletedRef.current) {
         hasCompletedRef.current = true
         onAnimationComplete?.()
       }
 
-      // Allow reverse: if user scrolls back, reset completion
-      if (currentProgress < 0.90 && hasCompletedRef.current) {
-        hasCompletedRef.current = false
-      }
-
-      // Scrub animations by directly setting action time (supports reverse)
+      // Scrub animations
       if (mixer && animationDuration > 0) {
         const targetTime = Math.min(currentProgress * animationDuration, animationDuration - 0.01)
-        for (const action of actions) {
-          action.paused = false
-          action.time = targetTime
-          action.paused = true
-        }
-        mixer.update(0)
+        mixer.setTime(targetTime)
         if (glbCamera) {
           glbCamera.near = 0.001
           glbCamera.far = 1000
           glbCamera.updateProjectionMatrix()
         }
       }
+
+      // Only render when active (save GPU when hidden)
+      if (!activeRef.current) return
 
       savedPos.copy(camera.position)
       savedRot.copy(camera.rotation)
@@ -253,18 +282,23 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
     }
     window.addEventListener('resize', onResize)
 
-    // Cleanup function
     cleanupRef.current = () => {
       cancelAnimationFrame(animFrameId)
-      window.removeEventListener('scroll', onScroll)
+      window.removeEventListener('wheel', onWheel)
+      window.removeEventListener('touchstart', onTouchStart)
+      window.removeEventListener('touchmove', onTouchMove)
       window.removeEventListener('mousemove', onMouseMove)
       window.removeEventListener('mouseleave', onMouseLeave)
       window.removeEventListener('resize', onResize)
+      document.body.style.overflow = ''
       document.body.classList.remove('animation-active')
       renderer.dispose()
+      resetScrollRef.current = null
       if (canvasContainerRef.current) {
         canvasContainerRef.current.innerHTML = ''
       }
+      // Reset guard so remount (React Strict Mode) can reinitialize
+      sceneReadyRef.current = false
     }
   }, [glbUrl, onAnimationComplete])
 
@@ -277,22 +311,20 @@ export default function ScrollAnimation({ glbUrl, onAnimationComplete }: ScrollA
 
   return (
     <>
-      <div ref={containerRef} className="relative" style={{ height: '500vh' }}>
-        <div
-          ref={canvasContainerRef}
-          className="fixed top-0 left-0 w-full h-screen"
-          style={{ zIndex: 10 }}
-        />
-      </div>
+      <div
+        ref={canvasContainerRef}
+        className="fixed top-0 left-0 w-full h-screen pointer-events-none"
+        style={{ zIndex: 100 }}
+      />
       <div
         ref={progressBarRef}
         className="fixed bottom-0 left-0 h-[3px] bg-white"
-        style={{ zIndex: 20, width: '0%' }}
+        style={{ zIndex: 110, width: '0%' }}
       />
       <div
         ref={scrollHintRef}
         className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center px-6 h-10 rounded-full transition-opacity duration-600"
-        style={{ zIndex: 30, background: 'rgba(10, 10, 10, 0.8)' }}
+        style={{ zIndex: 110, background: 'rgba(10, 10, 10, 0.8)' }}
       >
         <span className="whitespace-nowrap text-[11px] font-medium tracking-[0.13em] text-white font-sans">
           SCROLL TO ANIMATE
