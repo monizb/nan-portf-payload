@@ -36,13 +36,16 @@ export default function CaseStudyCard({
         />
       </div>
       <div className="mt-4">
-        <p className="text-[13px] text-gray-400 font-medium">
+        <p className="text-[16px] font-display font-normal" style={{ color: '#6B6B6B' }}>
           {company} &bull; {category}
         </p>
-        <h3 className="text-[17px] font-medium mt-1 leading-snug text-gray-900 font-body">
-          {excerpt}
+        <h3 className="text-[28px] font-display font-medium mt-2 leading-snug text-gray-900">
+          {title}
         </h3>
-        <div className="mt-3 inline-flex items-center gap-2 text-[13px] font-medium text-gray-900 border border-gray-200 rounded-full px-4 py-2 group-hover:border-gray-400 transition-colors">
+        <div
+          className="mt-4 inline-flex items-center gap-2 text-[16px] font-medium text-gray-900 rounded-full px-5 py-2.5 group-hover:bg-[#EBEBEB] transition-colors"
+          style={{ backgroundColor: '#F5F5F5' }}
+        >
           See how I changed that
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
             <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
