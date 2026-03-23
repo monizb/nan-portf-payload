@@ -70,7 +70,10 @@ export const CaseStudies: CollectionConfig = {
       name: 'hiddenHeadings',
       type: 'array',
       admin: {
-        description: 'Heading texts to hide from the sidebar navigation',
+        description: 'Check to show a heading in the sidebar, uncheck to hide it.',
+        components: {
+          Field: '@/components/HeadingVisibilityField#HeadingVisibilityField',
+        },
       },
       fields: [
         {

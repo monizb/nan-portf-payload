@@ -120,7 +120,7 @@ export default async function Home() {
       {/* Hero Section */}
       <section className="pt-28 pb-16 px-6" id="hero">
         <div className="max-w-[1200px] mx-auto">
-          <h1 className="text-4xl md:text-[3.5rem] leading-[1.1] tracking-[-0.03em] font-display max-w-2xl">
+          <h1 className="text-[40px] leading-[1.1] tracking-[-0.03em] font-display max-w-4xl">
             {heroTitle}
           </h1>
           <div className="flex items-center justify-between mt-4">
