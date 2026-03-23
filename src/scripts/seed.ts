@@ -6,26 +6,71 @@ import { fileURLToPath } from 'url'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const defaultRichTextContent = {
+const makeText = (text: string, format = 0) => ({
+  type: 'text' as const,
+  version: 1,
+  text,
+  format,
+  mode: 'normal' as const,
+  style: '',
+  detail: 0,
+})
+
+const makeParagraph = (text: string) => ({
+  type: 'paragraph' as const,
+  version: 1,
+  direction: 'ltr' as const,
+  format: '' as const,
+  indent: 0,
+  children: [makeText(text)],
+})
+
+const makeHeading = (text: string, tag: 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6') => ({
+  type: 'heading' as const,
+  version: 1,
+  tag,
+  direction: 'ltr' as const,
+  format: '' as const,
+  indent: 0,
+  children: [makeText(text)],
+})
+
+const makeListItem = (text: string, value: number) => ({
+  type: 'listitem' as const,
+  version: 1,
+  value,
+  direction: 'ltr' as const,
+  format: '' as const,
+  indent: 0,
+  children: [makeText(text)],
+})
+
+const makeBulletList = (items: string[]) => ({
+  type: 'list' as const,
+  version: 1,
+  listType: 'bullet' as const,
+  start: 1,
+  tag: 'ul' as const,
+  direction: 'ltr' as const,
+  format: '' as const,
+  indent: 0,
+  children: items.map((text, i) => makeListItem(text, i + 1)),
+})
+
+const makeRoot = (children: object[]) => ({
   root: {
-    children: [
-      {
-        type: 'paragraph',
-        children: [
-          {
-            type: 'text',
-            text: 'This case study content was seeded automatically.',
-          },
-        ],
-      },
-    ],
-    direction: 'ltr',
-    format: '',
-    indent: 0,
-    type: 'root',
+    type: 'root' as const,
     version: 1,
+    direction: 'ltr' as const,
+    format: '' as const,
+    indent: 0,
+    children,
   },
-}
+})
+
+const defaultRichTextContent = makeRoot([
+  makeParagraph('This case study content was seeded automatically.'),
+])
 
 async function seed() {
   const payload = await getPayload({ config })
@@ -141,98 +186,45 @@ async function seed() {
     status: 'published' as const,
     section: 'work-grid' as const,
     isFeatured: true,
-    content: {
-      root: {
-        children: [
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Every role in a modern workplace demands continuous learning. New tools, shifting market conditions, and evolving customer expectations mean that staying still is no longer an option. Yet the challenge is the same across roles: limited time and an overwhelming flood of information. Microlearning provides a practical way for professionals such as designers, product managers, and marketers to stay sharp without losing focus on their core work.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Why These Roles Need Continuous Learning' }],
-          },
-          {
-            type: 'list',
-            listType: 'bullet',
-            children: [
-              { type: 'listitem', children: [{ type: 'text', text: 'Designers: Trends in user experience, accessibility standards, and design tools change constantly.', format: 0 }] },
-              { type: 'listitem', children: [{ type: 'text', text: 'Product Managers: They need to understand new frameworks, market shifts, and customer insights.', format: 0 }] },
-              { type: 'listitem', children: [{ type: 'text', text: 'Marketers: Algorithms, platforms, and consumer behavior evolve faster than traditional training can keep up.', format: 0 }] },
-            ],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'How Microlearning Fits the Workflow' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Traditional training programs often require hours of uninterrupted focus. Microlearning breaks content into focused, bite-sized modules — typically 5 to 15 minutes — that professionals can complete between meetings, during commutes, or in spare moments throughout the day.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Benefits for Designers' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'For designers, microlearning enables rapid skill acquisition in emerging areas like AI-assisted design, motion design principles, and advanced prototyping techniques. Short format lessons allow designers to immediately apply what they learn to ongoing projects.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Benefits for Product Managers' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Product managers benefit from focused modules on market analysis, feature prioritization frameworks, and customer research methodologies. The short format respects their heavily scheduled days while ensuring continuous professional development.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Benefits for Marketers' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Marketers can stay current with platform algorithm changes, content strategy evolution, and new analytics tools through brief, targeted learning sessions that fit between campaign cycles.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Why Microlearning Works Better Than Long Courses' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Research shows that shorter learning sessions lead to better retention. The spacing effect — learning in small chunks over time rather than in massive blocks — significantly improves long-term recall and application of knowledge.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Courses for These Roles' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Modern platforms now offer curated learning paths specifically designed for design, product management, and marketing professionals. These paths combine video lessons, interactive exercises, and real-world case studies in digestible formats.' }],
-          },
-          {
-            type: 'heading',
-            tag: 'h2',
-            children: [{ type: 'text', text: 'Real Life Scenarios' }],
-          },
-          {
-            type: 'paragraph',
-            children: [{ type: 'text', text: 'Consider a designer who learns a new Figma plugin in a 10-minute tutorial during lunch, then uses it that afternoon to cut their prototyping time in half. Or a product manager who absorbs a new prioritization framework in a short module and applies it in their next sprint planning session. These are the real-world impacts of well-designed microlearning.' }],
-          },
-        ],
-        direction: 'ltr',
-        format: '',
-        indent: 0,
-        type: 'root',
-        version: 1,
-      },
-    },
+    content: makeRoot([
+      makeParagraph(
+        'Every role in a modern workplace demands continuous learning. New tools, shifting market conditions, and evolving customer expectations mean that staying still is no longer an option. Yet the challenge is the same across roles: limited time and an overwhelming flood of information. Microlearning provides a practical way for professionals such as designers, product managers, and marketers to stay sharp without losing focus on their core work.',
+      ),
+      makeHeading('Why These Roles Need Continuous Learning', 'h2'),
+      makeBulletList([
+        'Designers: Trends in user experience, accessibility standards, and design tools change constantly.',
+        'Product Managers: They need to understand new frameworks, market shifts, and customer insights.',
+        'Marketers: Algorithms, platforms, and consumer behavior evolve faster than traditional training can keep up.',
+      ]),
+      makeHeading('How Microlearning Fits the Workflow', 'h2'),
+      makeParagraph(
+        'Traditional training programs often require hours of uninterrupted focus. Microlearning breaks content into focused, bite-sized modules — typically 5 to 15 minutes — that professionals can complete between meetings, during commutes, or in spare moments throughout the day.',
+      ),
+      makeHeading('Benefits for Designers', 'h2'),
+      makeParagraph(
+        'For designers, microlearning enables rapid skill acquisition in emerging areas like AI-assisted design, motion design principles, and advanced prototyping techniques. Short format lessons allow designers to immediately apply what they learn to ongoing projects.',
+      ),
+      makeHeading('Benefits for Product Managers', 'h2'),
+      makeParagraph(
+        'Product managers benefit from focused modules on market analysis, feature prioritization frameworks, and customer research methodologies. The short format respects their heavily scheduled days while ensuring continuous professional development.',
+      ),
+      makeHeading('Benefits for Marketers', 'h2'),
+      makeParagraph(
+        'Marketers can stay current with platform algorithm changes, content strategy evolution, and new analytics tools through brief, targeted learning sessions that fit between campaign cycles.',
+      ),
+      makeHeading('Why Microlearning Works Better Than Long Courses', 'h2'),
+      makeParagraph(
+        'Research shows that shorter learning sessions lead to better retention. The spacing effect — learning in small chunks over time rather than in massive blocks — significantly improves long-term recall and application of knowledge.',
+      ),
+      makeHeading('Courses for These Roles', 'h2'),
+      makeParagraph(
+        'Modern platforms now offer curated learning paths specifically designed for design, product management, and marketing professionals. These paths combine video lessons, interactive exercises, and real-world case studies in digestible formats.',
+      ),
+      makeHeading('Real Life Scenarios', 'h2'),
+      makeParagraph(
+        'Consider a designer who learns a new Figma plugin in a 10-minute tutorial during lunch, then uses it that afternoon to cut their prototyping time in half. Or a product manager who absorbs a new prioritization framework in a short module and applies it in their next sprint planning session. These are the real-world impacts of well-designed microlearning.',
+      ),
+    ]),
     hiddenHeadings: [],
   }
 
@@ -284,7 +276,12 @@ async function seed() {
       })
 
       if (existing.docs.length > 0) {
-        console.log(`⏭ "${study.title}" already exists`)
+        await payload.update({
+          collection: 'case-studies',
+          id: existing.docs[0]!.id,
+          data: study as Parameters<typeof payload.update>[0]['data'],
+        })
+        console.log(`✓ Updated: ${study.title}`)
         continue
       }
 
@@ -294,7 +291,7 @@ async function seed() {
       })
       console.log(`✓ Created: ${study.title}`)
     } catch (err) {
-      console.error(`✗ Failed to create: ${study.title}`, err)
+      console.error(`✗ Failed to create/update: ${study.title}`, err)
     }
   }
 
