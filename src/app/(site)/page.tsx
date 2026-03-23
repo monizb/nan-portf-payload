@@ -186,8 +186,8 @@ export default async function Home() {
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             {/* Large left */}
             {displayStudio[0] && (
-              <div className="md:col-span-7">
-                <div className="rounded-xl overflow-hidden bg-gray-50 aspect-[4/3] relative">
+              <div className="md:col-span-8">
+                <div className="rounded-xl overflow-hidden bg-gray-50 aspect-3/2 relative">
                   <Image
                     src={getImageUrl(displayStudio[0].featuredImage).url}
                     alt={getImageUrl(displayStudio[0].featuredImage).alt}
@@ -202,10 +202,10 @@ export default async function Home() {
               </div>
             )}
             {/* Right stack */}
-            <div className="md:col-span-5 flex flex-col gap-6">
+            <div className="md:col-span-4 flex flex-col gap-6">
               {displayStudio.slice(1, 3).map((item) => (
                 <div key={item.id}>
-                  <div className="rounded-xl overflow-hidden bg-gray-50 aspect-[16/10] relative">
+                  <div className="rounded-xl overflow-hidden bg-gray-50 aspect-16/10 relative">
                     <Image
                       src={getImageUrl(item.featuredImage).url}
                       alt={getImageUrl(item.featuredImage).alt}
