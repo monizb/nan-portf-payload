@@ -176,7 +176,7 @@ export default async function Home() {
       <section className="py-20 px-6" id="studio">
         <div className="max-w-350 mx-auto">
           <div className="flex items-start justify-between mb-12">
-            <h2 className="text-3xl md:text-[2.5rem] leading-[1.15] font-display max-w-lg">
+            <h2 className="text-[40px] leading-[1.15] font-display">
               {studioTitle}
             </h2>
             <SectionButton href="/work" label="Enter the studio" />
