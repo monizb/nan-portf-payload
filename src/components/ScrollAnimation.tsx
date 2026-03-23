@@ -27,9 +27,10 @@ export default function ScrollAnimation({ glbUrl, active, onAnimationComplete }:
     activeRef.current = active
 
     if (active) {
-      // Entering animation mode: reset scroll to start, lock body scroll, show canvas
-      resetScrollRef.current?.()  // rewind virtualScroll/progress to 0 so completion doesn't fire instantly
-      hasCompletedRef.current = false
+      // Entering animation mode: start at 100% so user scrolls backward through animation
+      resetScrollRef.current?.()
+      // Block completion from firing immediately — animate loop will clear this once progress drops below 0.9
+      hasCompletedRef.current = true
       document.body.style.overflow = 'hidden'
       document.body.classList.add('animation-active')
       if (canvasContainerRef.current) canvasContainerRef.current.style.display = ''
@@ -59,11 +60,11 @@ export default function ScrollAnimation({ glbUrl, active, onAnimationComplete }:
     let targetProgress = 0
     let currentProgress = 0
 
-    // Expose a reset so the active useEffect can rewind to the start
+    // Expose a reset so the active useEffect can position animation at 100% for reverse playback
     resetScrollRef.current = () => {
-      virtualScroll = 0
-      targetProgress = 0
-      currentProgress = 0
+      virtualScroll = VIRTUAL_SCROLL_LENGTH
+      targetProgress = 1
+      currentProgress = 1
     }
 
     const onWheel = (e: WheelEvent) => {
@@ -225,7 +226,12 @@ export default function ScrollAnimation({ glbUrl, active, onAnimationComplete }:
         currentProgress = targetProgress
       }
 
-      // Only fire completion when active and progress > 98%
+      // Re-enable completion once user has scrolled back (progress dropped below 90%)
+      if (hasCompletedRef.current && currentProgress < 0.9) {
+        hasCompletedRef.current = false
+      }
+
+      // Fire completion when active, scrolled forward past 98%
       if (activeRef.current && currentProgress > 0.98 && !hasCompletedRef.current) {
         hasCompletedRef.current = true
         onAnimationComplete?.()

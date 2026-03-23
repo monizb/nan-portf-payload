@@ -34,21 +34,41 @@ export default function HomeClient({ children, glbUrl }: HomeClientProps) {
   useEffect(() => {
     if (animationActive) return
 
+    // Require sustained upward scroll before re-entering animation (prevents accidental trigger)
+    const REENTRY_THRESHOLD = 250
+    let upScrollAccum = 0
+
     const onWheel = (e: WheelEvent) => {
       if (window.scrollY === 0 && e.deltaY < 0) {
-        e.preventDefault()
-        setAnimationActive(true)
+        e.preventDefault() // always prevent overscroll bounce
+        upScrollAccum += Math.abs(e.deltaY)
+        if (upScrollAccum >= REENTRY_THRESHOLD) {
+          upScrollAccum = 0
+          setAnimationActive(true)
+        }
+      } else {
+        upScrollAccum = 0
       }
     }
 
     let touchY = 0
+    let touchAccum = 0
     const onTouchStart = (e: TouchEvent) => {
       touchY = e.touches[0].clientY
+      touchAccum = 0
     }
     const onTouchMove = (e: TouchEvent) => {
       if (window.scrollY === 0 && e.touches[0].clientY > touchY) {
         e.preventDefault()
-        setAnimationActive(true)
+        touchAccum += e.touches[0].clientY - touchY
+        touchY = e.touches[0].clientY
+        if (touchAccum >= REENTRY_THRESHOLD) {
+          touchAccum = 0
+          setAnimationActive(true)
+        }
+      } else {
+        touchAccum = 0
+        touchY = e.touches[0].clientY
       }
     }
 
