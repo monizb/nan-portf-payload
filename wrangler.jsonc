@@ -1,0 +1,39 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "main": ".open-next/worker.js",
+  "name": "nanditha-portfolio",
+  "compatibility_date": "2025-08-15",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "D1",
+      "database_id": "c5936f72-2743-475a-acf1-91b24be4a80a",
+      "database_name": "nanditha-portfolio-db",
+      "remote": true
+    }
+  ],
+  "r2_buckets": [
+    // Enable R2 in the Cloudflare Dashboard first, then uncomment:
+    // {
+    //   "binding": "R2",
+    //   "bucket_name": "nanditha-portfolio-media"
+    // }
+  ],
+  "vars": {
+    "PAYLOAD_SECRET": "ca8f03402670f0abb986352370921331403ef7736246b5225bd472a7696e973f",
+    "NEXT_PUBLIC_SITE_URL": "https://nanditha-portfolio.monish2-basaniwal.workers.dev"
+  },
+  "observability": {
+    "logs": {
+      "enabled": false,
+      "invocation_logs": true
+    }
+  }
+}

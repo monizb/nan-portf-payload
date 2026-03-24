@@ -1,17 +1,26 @@
-import type { NextConfig } from "next";
 import { withPayload } from "@payloadcms/next/withPayload";
 
-const nextConfig: NextConfig = {
+const nextConfig = {
   reactCompiler: true,
   images: {
     remotePatterns: [
       {
-        protocol: "https",
+        protocol: "https" as const,
         hostname: "**",
       },
     ],
   },
   transpilePackages: ["three"],
+  // Packages with Cloudflare Workers (workerd) specific code
+  serverExternalPackages: ["jose", "pg-cloudflare", "sharp", "drizzle-kit"],
+  webpack: (webpackConfig: any) => {
+    webpackConfig.resolve.extensionAlias = {
+      ".cjs": [".cts", ".cjs"],
+      ".js": [".ts", ".tsx", ".js", ".jsx"],
+      ".mjs": [".mts", ".mjs"],
+    };
+    return webpackConfig;
+  },
 };
 
-export default withPayload(nextConfig);
+export default withPayload(nextConfig, { devBundleServerPackages: false });
