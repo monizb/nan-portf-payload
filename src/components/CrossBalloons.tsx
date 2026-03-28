@@ -1,27 +1,25 @@
 'use client'
 
-import { useRef, useMemo, useCallback, useEffect, useState } from 'react'
+import { useRef, useMemo, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 // ─── Configuration ───────────────────────────────────────────────
-const NUM_HEXAGONS = 7
-const NUM_SPHERES = 7
-const TOTAL = NUM_HEXAGONS + NUM_SPHERES
-const GRAVITY_FACTOR = 35
+const SHAPE_GROUPS = [
+  { type: 'sphere' as const, count: 5, color: '#D97757', roughness: 0.12, metalness: 0.5 },   // orange metal
+  { type: 'sphere' as const, count: 5, color: '#E8915A', roughness: 0.45, metalness: 0.0 },   // orange plastic
+  { type: 'sphere' as const, count: 5, color: '#F0EDE8', roughness: 0.95, metalness: 0.0 },   // white chalk
+  { type: 'sphere' as const, count: 5, color: '#FAFAFA', roughness: 0.05, metalness: 0.15 },  // white shiny
+  { type: 'hexagon' as const, count: 5, color: '#D97757', roughness: 0.8, metalness: 0.0 },   // black matte
+  { type: 'hexagon' as const, count: 5, color: '#D97757', roughness: 0.05, metalness: 0.6 },  // black glossy
+]
+const TOTAL = SHAPE_GROUPS.reduce((sum, g) => sum + g.count, 0)
+const GRAVITY_FACTOR = 38
 const MOUSE_PUSH_FORCE = 0.15
 const MOUSE_INFLUENCE = 0.12
 const MOUSE_RADIUS = 0.03
 const VELOCITY_DAMPING = 0.2
-const INITIAL_SPREAD = 8
-const COLOR_PALETTE = [
-  '#D97757', // terracotta
-  '#1a2ffb', // blue
-  '#bb2bff', // purple
-  '#1eff5d', // green
-  '#cfff0f', // lime
-  '#ff383c', // red
-]
+const INITIAL_SPREAD = 4.6
 
 // ─── Physics body ────────────────────────────────────────────────
 interface Body {
@@ -45,9 +43,9 @@ function createBody(index: number, seed: number): Body {
   }
   const px = (rand(index * 3) - 0.5) * INITIAL_SPREAD
   const py = (rand(index * 3 + 1) - 0.5) * INITIAL_SPREAD
-  const pz = (rand(index * 3 + 2) - 0.5) * 4
+  const pz = (rand(index * 3 + 2) - 0.5) * 3.2
 
-  const radius = 0.6 + rand(index * 7) * 0.6
+  const radius = 0.72 + rand(index * 7) * 0.55
   const density = 0.8 + rand(index * 11) * 0.4
   const volume = Math.PI * radius * 1.333
   const mass = volume * radius * radius * density
@@ -194,22 +192,29 @@ function simulatePhysics(
 
 // ─── Instanced 3D shapes ─────────────────────────────────────────
 const _dummy = new THREE.Object3D()
-const _color = new THREE.Color()
 
-function ShapeInstances({ colorIndex }: { colorIndex: number }) {
-  const hexMeshRef = useRef<THREE.InstancedMesh>(null)
-  const sphereMeshRef = useRef<THREE.InstancedMesh>(null)
+function ShapeInstances() {
+  const meshRefs = useRef<Map<number, THREE.InstancedMesh>>(new Map())
   const { camera } = useThree()
   const mouseNDC = useRef({ x: 0, y: 0 })
   const isFirstFrame = useRef(true)
 
-  // 3D geometries: hexagonal prism + sphere
   const hexGeom = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 6)
+    const g = new THREE.CylinderGeometry(0.5, 0.5, 0.5, 6)
     g.computeVertexNormals()
     return g
   }, [])
-  const sphereGeom = useMemo(() => new THREE.SphereGeometry(0.5, 24, 16), [])
+  const sphereGeom = useMemo(() => new THREE.SphereGeometry(0.5, 32, 20), [])
+
+  const groupOffsets = useMemo(() => {
+    const offsets: { start: number; count: number }[] = []
+    let start = 0
+    for (const g of SHAPE_GROUPS) {
+      offsets.push({ start, count: g.count })
+      start += g.count
+    }
+    return offsets
+  }, [])
 
   const bodies = useMemo(() => {
     const arr: Body[] = []
@@ -219,7 +224,14 @@ function ShapeInstances({ colorIndex }: { colorIndex: number }) {
     return arr
   }, [])
 
-  // Track mouse position in NDC
+  const materials = useMemo(() =>
+    SHAPE_GROUPS.map(g => new THREE.MeshStandardMaterial({
+      color: g.color,
+      roughness: g.roughness,
+      metalness: g.metalness,
+    }))
+  , [])
+
   useEffect(() => {
     const onMove = (e: PointerEvent) => {
       const rect = (e.target as HTMLElement)?.closest?.('canvas')?.getBoundingClientRect()
@@ -231,43 +243,9 @@ function ShapeInstances({ colorIndex }: { colorIndex: number }) {
     return () => window.removeEventListener('pointermove', onMove)
   }, [])
 
-  // Update colors when colorIndex changes
-  useEffect(() => {
-    if (!hexMeshRef.current || !sphereMeshRef.current) return
-    for (let i = 0; i < NUM_HEXAGONS; i++) {
-      const offset = (i + colorIndex) % COLOR_PALETTE.length
-      _color.set(COLOR_PALETTE[offset])
-      hexMeshRef.current.setColorAt(i, _color)
-    }
-    for (let i = 0; i < NUM_SPHERES; i++) {
-      const offset = (NUM_HEXAGONS + i + colorIndex) % COLOR_PALETTE.length
-      _color.set(COLOR_PALETTE[offset])
-      sphereMeshRef.current.setColorAt(i, _color)
-    }
-    if (hexMeshRef.current.instanceColor) hexMeshRef.current.instanceColor.needsUpdate = true
-    if (sphereMeshRef.current.instanceColor) sphereMeshRef.current.instanceColor.needsUpdate = true
-  }, [colorIndex])
-
-  // Initialize instance colors on mount
-  useEffect(() => {
-    if (!hexMeshRef.current || !sphereMeshRef.current) return
-    for (let i = 0; i < NUM_HEXAGONS; i++) {
-      _color.set(COLOR_PALETTE[i % COLOR_PALETTE.length])
-      hexMeshRef.current.setColorAt(i, _color)
-    }
-    for (let i = 0; i < NUM_SPHERES; i++) {
-      _color.set(COLOR_PALETTE[(NUM_HEXAGONS + i) % COLOR_PALETTE.length])
-      sphereMeshRef.current.setColorAt(i, _color)
-    }
-    if (hexMeshRef.current.instanceColor) hexMeshRef.current.instanceColor.needsUpdate = true
-    if (sphereMeshRef.current.instanceColor) sphereMeshRef.current.instanceColor.needsUpdate = true
-  }, [])
-
   useFrame((_, delta) => {
-    if (!hexMeshRef.current || !sphereMeshRef.current) return
     const dt = Math.min(delta, 1 / 30)
 
-    // Initialize _mousePrev on first frame
     if (isFirstFrame.current) {
       _p1.set(mouseNDC.current.x, mouseNDC.current.y, 0.5)
       _p1.unproject(camera)
@@ -280,50 +258,40 @@ function ShapeInstances({ colorIndex }: { colorIndex: number }) {
 
     simulatePhysics(bodies, dt, mouseNDC.current, camera)
 
-    // Update hexagon transforms (first NUM_HEXAGONS bodies)
-    for (let i = 0; i < NUM_HEXAGONS; i++) {
-      const body = bodies[i]
-      _dummy.position.copy(body.position)
-      _dummy.quaternion.copy(body.quaternion)
-      _dummy.scale.setScalar(body.radius)
-      _dummy.updateMatrix()
-      hexMeshRef.current.setMatrixAt(i, _dummy.matrix)
+    for (let gi = 0; gi < SHAPE_GROUPS.length; gi++) {
+      const mesh = meshRefs.current.get(gi)
+      if (!mesh) continue
+      const { start, count } = groupOffsets[gi]
+      for (let i = 0; i < count; i++) {
+        const body = bodies[start + i]
+        _dummy.position.copy(body.position)
+        _dummy.quaternion.copy(body.quaternion)
+        _dummy.scale.setScalar(body.radius)
+        _dummy.updateMatrix()
+        mesh.setMatrixAt(i, _dummy.matrix)
+      }
+      mesh.instanceMatrix.needsUpdate = true
     }
-    hexMeshRef.current.instanceMatrix.needsUpdate = true
-
-    // Update sphere transforms (remaining bodies)
-    for (let i = 0; i < NUM_SPHERES; i++) {
-      const body = bodies[NUM_HEXAGONS + i]
-      _dummy.position.copy(body.position)
-      _dummy.quaternion.copy(body.quaternion)
-      _dummy.scale.setScalar(body.radius)
-      _dummy.updateMatrix()
-      sphereMeshRef.current.setMatrixAt(i, _dummy.matrix)
-    }
-    sphereMeshRef.current.instanceMatrix.needsUpdate = true
   })
-
-  const hexMat = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.25,
-    metalness: 0.15,
-  }), [])
-
-  const sphereMat = useMemo(() => new THREE.MeshStandardMaterial({
-    roughness: 0.1,
-    metalness: 0.3,
-  }), [])
 
   return (
     <>
-      <instancedMesh ref={hexMeshRef} args={[hexGeom, hexMat, NUM_HEXAGONS]} frustumCulled={false} />
-      <instancedMesh ref={sphereMeshRef} args={[sphereGeom, sphereMat, NUM_SPHERES]} frustumCulled={false} />
+      {SHAPE_GROUPS.map((group, gi) => (
+        <instancedMesh
+          key={gi}
+          ref={(mesh: THREE.InstancedMesh | null) => {
+            if (mesh) meshRefs.current.set(gi, mesh)
+          }}
+          args={[group.type === 'hexagon' ? hexGeom : sphereGeom, materials[gi], group.count]}
+          frustumCulled={false}
+        />
+      ))}
     </>
   )
 }
 
 // ─── Scene with camera + lights ──────────────────────────────────
-function Scene({ colorIndex }: { colorIndex: number }) {
-  // Subtle camera dolly-in on mount
+function Scene() {
   const startTime = useRef(0)
   useEffect(() => {
     startTime.current = Date.now()
@@ -332,34 +300,28 @@ function Scene({ colorIndex }: { colorIndex: number }) {
   useFrame((state) => {
     if (!startTime.current) return
     const elapsed = (Date.now() - startTime.current) / 1000
-    const targetZ = 14 - Math.min(elapsed / 2, 1) * 2.5
+    const targetZ = 14 - Math.min(elapsed / 2, 1) * 3.5
     state.camera.position.z += (targetZ - state.camera.position.z) * 0.03
   })
 
   return (
     <>
-      <ambientLight intensity={0.6} />
-      <directionalLight position={[10, 10, 5]} intensity={1.2} />
-      <directionalLight position={[-5, -5, 3]} intensity={0.4} />
-      <pointLight position={[0, 0, 8]} intensity={0.8} />
-      <ShapeInstances colorIndex={colorIndex} />
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[10, 10, 5]} intensity={1.4} />
+      <directionalLight position={[-5, -5, 3]} intensity={0.5} />
+      <pointLight position={[0, 0, 8]} intensity={0.6} />
+      <pointLight position={[-5, 3, 4]} intensity={0.3} />
+      <ShapeInstances />
     </>
   )
 }
 
 // ─── Exported component ──────────────────────────────────────────
 export default function CrossBalloons() {
-  const [colorIndex, setColorIndex] = useState(0)
-
-  const handleClick = useCallback(() => {
-    setColorIndex((prev) => (prev + 1) % COLOR_PALETTE.length)
-  }, [])
-
   return (
     <div
-      className="w-full rounded-2xl overflow-hidden cursor-pointer select-none"
+      className="w-full rounded-2xl overflow-hidden select-none"
       style={{ aspectRatio: '16/9', background: '#111' }}
-      onClick={handleClick}
     >
       <Canvas
         gl={{
@@ -372,7 +334,7 @@ export default function CrossBalloons() {
         style={{ width: '100%', height: '100%' }}
       >
         <color attach="background" args={['#111']} />
-        <Scene colorIndex={colorIndex} />
+        <Scene />
       </Canvas>
     </div>
   )
