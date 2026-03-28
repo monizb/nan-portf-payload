@@ -5,7 +5,9 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 
 // ─── Configuration ───────────────────────────────────────────────
-const NUM_CROSSES = 12
+const NUM_HEXAGONS = 7
+const NUM_SPHERES = 7
+const TOTAL = NUM_HEXAGONS + NUM_SPHERES
 const GRAVITY_FACTOR = 35
 const MOUSE_PUSH_FORCE = 0.15
 const MOUSE_INFLUENCE = 0.12
@@ -20,29 +22,6 @@ const COLOR_PALETTE = [
   '#cfff0f', // lime
   '#ff383c', // red
 ]
-
-// ─── Cross shape geometry ────────────────────────────────────────
-function createCrossGeometry(): THREE.BufferGeometry {
-  const arm = 0.08
-  const len = 0.5
-  // Cross shape: two overlapping rectangles
-  const vertices = new Float32Array([
-    // Vertical bar
-    -arm, -len, 0, arm, -len, 0, arm, len, 0,
-    -arm, -len, 0, arm, len, 0, -arm, len, 0,
-    // Horizontal bar
-    -len, -arm, 0, len, -arm, 0, len, arm, 0,
-    -len, -arm, 0, len, arm, 0, -len, arm, 0,
-  ])
-  const normals = new Float32Array(36)
-  for (let i = 0; i < 12; i++) {
-    normals[i * 3 + 2] = 1
-  }
-  const geom = new THREE.BufferGeometry()
-  geom.setAttribute('position', new THREE.BufferAttribute(vertices, 3))
-  geom.setAttribute('normal', new THREE.BufferAttribute(normals, 3))
-  return geom
-}
 
 // ─── Physics body ────────────────────────────────────────────────
 interface Body {
@@ -213,21 +192,28 @@ function simulatePhysics(
   }
 }
 
-// ─── Instanced cross meshes ─────────────────────────────────────
+// ─── Instanced 3D shapes ─────────────────────────────────────────
 const _dummy = new THREE.Object3D()
 const _color = new THREE.Color()
 
-function CrossInstances({ colorIndex }: { colorIndex: number }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null)
+function ShapeInstances({ colorIndex }: { colorIndex: number }) {
+  const hexMeshRef = useRef<THREE.InstancedMesh>(null)
+  const sphereMeshRef = useRef<THREE.InstancedMesh>(null)
   const { camera } = useThree()
   const mouseNDC = useRef({ x: 0, y: 0 })
   const isFirstFrame = useRef(true)
 
-  const crossGeom = useMemo(() => createCrossGeometry(), [])
+  // 3D geometries: hexagonal prism + sphere
+  const hexGeom = useMemo(() => {
+    const g = new THREE.CylinderGeometry(0.5, 0.5, 0.3, 6)
+    g.computeVertexNormals()
+    return g
+  }, [])
+  const sphereGeom = useMemo(() => new THREE.SphereGeometry(0.5, 24, 16), [])
 
   const bodies = useMemo(() => {
     const arr: Body[] = []
-    for (let i = 0; i < NUM_CROSSES; i++) {
+    for (let i = 0; i < TOTAL; i++) {
       arr.push(createBody(i, 42))
     }
     return arr
@@ -245,34 +231,40 @@ function CrossInstances({ colorIndex }: { colorIndex: number }) {
     return () => window.removeEventListener('pointermove', onMove)
   }, [])
 
-  // Color each instance
-  const colors = useMemo(() => {
-    const arr = new Float32Array(NUM_CROSSES * 3)
-    for (let i = 0; i < NUM_CROSSES; i++) {
-      const hex = COLOR_PALETTE[i % COLOR_PALETTE.length]
-      _color.set(hex)
-      arr[i * 3] = _color.r
-      arr[i * 3 + 1] = _color.g
-      arr[i * 3 + 2] = _color.b
-    }
-    return arr
-  }, [])
-
   // Update colors when colorIndex changes
   useEffect(() => {
-    if (!meshRef.current) return
-    for (let i = 0; i < NUM_CROSSES; i++) {
+    if (!hexMeshRef.current || !sphereMeshRef.current) return
+    for (let i = 0; i < NUM_HEXAGONS; i++) {
       const offset = (i + colorIndex) % COLOR_PALETTE.length
       _color.set(COLOR_PALETTE[offset])
-      meshRef.current.setColorAt(i, _color)
+      hexMeshRef.current.setColorAt(i, _color)
     }
-    if (meshRef.current.instanceColor) {
-      meshRef.current.instanceColor.needsUpdate = true
+    for (let i = 0; i < NUM_SPHERES; i++) {
+      const offset = (NUM_HEXAGONS + i + colorIndex) % COLOR_PALETTE.length
+      _color.set(COLOR_PALETTE[offset])
+      sphereMeshRef.current.setColorAt(i, _color)
     }
+    if (hexMeshRef.current.instanceColor) hexMeshRef.current.instanceColor.needsUpdate = true
+    if (sphereMeshRef.current.instanceColor) sphereMeshRef.current.instanceColor.needsUpdate = true
   }, [colorIndex])
 
+  // Initialize instance colors on mount
+  useEffect(() => {
+    if (!hexMeshRef.current || !sphereMeshRef.current) return
+    for (let i = 0; i < NUM_HEXAGONS; i++) {
+      _color.set(COLOR_PALETTE[i % COLOR_PALETTE.length])
+      hexMeshRef.current.setColorAt(i, _color)
+    }
+    for (let i = 0; i < NUM_SPHERES; i++) {
+      _color.set(COLOR_PALETTE[(NUM_HEXAGONS + i) % COLOR_PALETTE.length])
+      sphereMeshRef.current.setColorAt(i, _color)
+    }
+    if (hexMeshRef.current.instanceColor) hexMeshRef.current.instanceColor.needsUpdate = true
+    if (sphereMeshRef.current.instanceColor) sphereMeshRef.current.instanceColor.needsUpdate = true
+  }, [])
+
   useFrame((_, delta) => {
-    if (!meshRef.current) return
+    if (!hexMeshRef.current || !sphereMeshRef.current) return
     const dt = Math.min(delta, 1 / 30)
 
     // Initialize _mousePrev on first frame
@@ -288,37 +280,44 @@ function CrossInstances({ colorIndex }: { colorIndex: number }) {
 
     simulatePhysics(bodies, dt, mouseNDC.current, camera)
 
-    // Update instance transforms
-    for (let i = 0; i < NUM_CROSSES; i++) {
+    // Update hexagon transforms (first NUM_HEXAGONS bodies)
+    for (let i = 0; i < NUM_HEXAGONS; i++) {
       const body = bodies[i]
       _dummy.position.copy(body.position)
       _dummy.quaternion.copy(body.quaternion)
       _dummy.scale.setScalar(body.radius)
       _dummy.updateMatrix()
-      meshRef.current.setMatrixAt(i, _dummy.matrix)
+      hexMeshRef.current.setMatrixAt(i, _dummy.matrix)
     }
-    meshRef.current.instanceMatrix.needsUpdate = true
+    hexMeshRef.current.instanceMatrix.needsUpdate = true
+
+    // Update sphere transforms (remaining bodies)
+    for (let i = 0; i < NUM_SPHERES; i++) {
+      const body = bodies[NUM_HEXAGONS + i]
+      _dummy.position.copy(body.position)
+      _dummy.quaternion.copy(body.quaternion)
+      _dummy.scale.setScalar(body.radius)
+      _dummy.updateMatrix()
+      sphereMeshRef.current.setMatrixAt(i, _dummy.matrix)
+    }
+    sphereMeshRef.current.instanceMatrix.needsUpdate = true
   })
 
-  const material = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      roughness: 0.3,
-      metalness: 0.1,
-      side: THREE.DoubleSide,
-    })
-  }, [])
+  const hexMat = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.25,
+    metalness: 0.15,
+  }), [])
+
+  const sphereMat = useMemo(() => new THREE.MeshStandardMaterial({
+    roughness: 0.1,
+    metalness: 0.3,
+  }), [])
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[crossGeom, material, NUM_CROSSES]}
-      frustumCulled={false}
-    >
-      <instancedBufferAttribute
-        attach="instanceColor"
-        args={[colors, 3]}
-      />
-    </instancedMesh>
+    <>
+      <instancedMesh ref={hexMeshRef} args={[hexGeom, hexMat, NUM_HEXAGONS]} frustumCulled={false} />
+      <instancedMesh ref={sphereMeshRef} args={[sphereGeom, sphereMat, NUM_SPHERES]} frustumCulled={false} />
+    </>
   )
 }
 
@@ -342,7 +341,8 @@ function Scene({ colorIndex }: { colorIndex: number }) {
       <ambientLight intensity={0.6} />
       <directionalLight position={[10, 10, 5]} intensity={1.2} />
       <directionalLight position={[-5, -5, 3]} intensity={0.4} />
-      <CrossInstances colorIndex={colorIndex} />
+      <pointLight position={[0, 0, 8]} intensity={0.8} />
+      <ShapeInstances colorIndex={colorIndex} />
     </>
   )
 }
