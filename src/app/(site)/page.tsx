@@ -4,6 +4,7 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import CaseStudyCard from '@/components/CaseStudyCard'
 import SectionButton from '@/components/SectionButton'
+import HeroCrossBalloons from '@/components/HeroCrossBalloons'
 import Image from 'next/image'
 
 // Placeholder images (replaced when real uploads exist)
@@ -177,19 +178,9 @@ export default async function Home() {
             <SectionButton href="/#beyond" label="Beyond the work" />
           </div>
 
-          {/* Hero Image */}
-          <div className="mt-10 rounded-2xl overflow-hidden bg-gray-900 aspect-[16/9] relative">
-            {settings.heroImage ? (
-              <Image
-                src={getImageUrl(settings.heroImage).url}
-                alt="Hero"
-                fill
-                className="object-cover"
-                priority
-              />
-            ) : (
-              <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-black" />
-            )}
+          {/* Hero 3D Cross Animation */}
+          <div className="mt-10">
+            <HeroCrossBalloons />
           </div>
         </div>
       </section>

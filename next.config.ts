@@ -3,12 +3,7 @@ import { withPayload } from "@payloadcms/next/withPayload";
 const nextConfig = {
   reactCompiler: true,
   images: {
-    remotePatterns: [
-      {
-        protocol: "https" as const,
-        hostname: "**",
-      },
-    ],
+    unoptimized: true,
   },
   transpilePackages: ["three"],
   // Packages with Cloudflare Workers (workerd) specific code

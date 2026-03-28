@@ -73,11 +73,10 @@ export default buildConfig({
   db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
   logger: isProduction ? cloudflareLogger : undefined,
   plugins: [
-    // Uncomment when R2 is enabled in Cloudflare Dashboard:
-    // r2Storage({
-    //   bucket: cloudflare.env.R2,
-    //   collections: { media: true },
-    // }),
+    r2Storage({
+      bucket: cloudflare.env.R2,
+      collections: { media: true },
+    }),
   ],
 })
 
