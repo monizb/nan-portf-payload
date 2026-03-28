@@ -119,7 +119,26 @@ export default buildConfig({
               {
                 name: 'sectionBody',
                 type: 'richText',
-                editor: lexicalEditor(),
+                editor: lexicalEditor({
+                  features: ({ defaultFeatures }) => [
+                    ...defaultFeatures,
+                    FixedToolbarFeature(),
+                    InlineToolbarFeature(),
+                    TextStateFeature({
+                      state: {
+                        highlight: {
+                          highlighted: {
+                            label: 'Highlighted Text',
+                            css: {
+                              color: '#D97757',
+                              'font-size': '20px',
+                            },
+                          },
+                        },
+                      },
+                    }),
+                  ],
+                }),
                 required: false,
                 admin: {
                   description: 'Section body content',

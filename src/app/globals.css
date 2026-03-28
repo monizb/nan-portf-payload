@@ -205,6 +205,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Highlighted text */
+.blog-content .highlighted-text,
 .highlighted-text {
   color: #D97757;
   font-size: 20px;

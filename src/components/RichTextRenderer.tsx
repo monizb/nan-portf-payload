@@ -24,8 +24,8 @@ type LexicalNode = {
   direction?: string
   indent?: number
   version?: number
-  // TextState (highlighted text)
-  states?: Record<string, string>
+  // TextState (highlighted text) — stored under '$' key (Lexical NODE_STATE_KEY)
+  $?: Record<string, string>
   // Block fields
   blockType?: string
 }
@@ -61,8 +61,9 @@ function renderText(node: LexicalNode): React.ReactNode {
     if (node.format & 4) text = <s key="strikethrough">{text}</s>
   }
 
-  // TextState: highlighted text
-  if (node.states?.highlight === 'highlighted') {
+  // TextState: Lexical stores state under '$' key (NODE_STATE_KEY)
+  const nodeState = (node as unknown as Record<string, Record<string, string>>)['$']
+  if (nodeState?.highlight === 'highlighted') {
     text = <span key="highlighted" className="highlighted-text">{text}</span>
   }
 
