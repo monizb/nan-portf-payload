@@ -24,6 +24,10 @@ type LexicalNode = {
   direction?: string
   indent?: number
   version?: number
+  // TextState (highlighted text)
+  states?: Record<string, string>
+  // Block fields
+  blockType?: string
 }
 
 type LexicalContent = {
@@ -37,6 +41,15 @@ type LexicalContent = {
   }
 }
 
+type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
+
+function toHeadingTag(tag?: string): HeadingTag {
+  if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') {
+    return tag
+  }
+  return 'h2'
+}
+
 function renderText(node: LexicalNode): React.ReactNode {
   let text: React.ReactNode = node.text || ''
 
@@ -46,6 +59,11 @@ function renderText(node: LexicalNode): React.ReactNode {
     if (node.format & 8) text = <u key="underline">{text}</u>
     if (node.format & 16) text = <code key="code" className="bg-gray-100 px-1.5 py-0.5 rounded text-[15px]">{text}</code>
     if (node.format & 4) text = <s key="strikethrough">{text}</s>
+  }
+
+  // TextState: highlighted text
+  if (node.states?.highlight === 'highlighted') {
+    text = <span key="highlighted" className="highlighted-text">{text}</span>
   }
 
   return text
@@ -62,14 +80,14 @@ function renderNode(node: LexicalNode, index: number): React.ReactNode {
       return <p key={index}>{children}</p>
 
     case 'heading': {
-      const Tag = (node.tag || 'h2') as keyof React.JSX.IntrinsicElements
+      const tag = toHeadingTag(node.tag)
       const id = (node.children || [])
         .map((c) => c.text || '')
         .join('')
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '')
-      return <Tag key={index} id={id}>{children}</Tag>
+      return React.createElement(tag, { key: index, id }, children)
     }
 
     case 'list': {
@@ -113,6 +131,40 @@ function renderNode(node: LexicalNode, index: number): React.ReactNode {
 
     case 'linebreak':
       return <br key={index} />
+
+    case 'horizontalrule':
+      return <hr key={index} />
+
+    case 'block': {
+      const blockFields = node.fields as Record<string, unknown> | undefined
+      if (blockFields?.blockType === 'section' || node.blockType === 'section') {
+        const sectionTag = (blockFields?.sectionTag as string) || ''
+        const sectionTitle = (blockFields?.sectionTitle as string) || ''
+        const sectionBody = blockFields?.sectionBody as LexicalContent | null | undefined
+        const sectionId = sectionTag
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+        return (
+          <div key={index} className="blog-section" data-section-tag={sectionTag} id={`section-${sectionId}`}>
+            <div className="blog-section-tag">{sectionTag}</div>
+            <div className="blog-section-title">{sectionTitle}</div>
+            {sectionBody?.root?.children && (
+              <div className="blog-section-body">
+                {sectionBody.root.children.map((child, ci) => renderNode(child, ci))}
+              </div>
+            )}
+            <hr className="blog-section-divider" />
+          </div>
+        )
+      }
+      if (blockFields?.blockType === 'highlightedText' || node.blockType === 'highlightedText') {
+        const highlightedText = (blockFields?.text as string) || ''
+        return <p key={index} className="highlighted-text">{highlightedText}</p>
+      }
+      if (children) return <React.Fragment key={index}>{children}</React.Fragment>
+      return null
+    }
 
     default:
       if (children) return <React.Fragment key={index}>{children}</React.Fragment>

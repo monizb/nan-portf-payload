@@ -1,7 +1,14 @@
 import fs from 'fs'
 import path from 'path'
 import { sqliteD1Adapter } from '@payloadcms/db-d1-sqlite'
-import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import {
+  lexicalEditor,
+  BlocksFeature,
+  FixedToolbarFeature,
+  InlineToolbarFeature,
+  HorizontalRuleFeature,
+  TextStateFeature,
+} from '@payloadcms/richtext-lexical'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
@@ -65,7 +72,65 @@ export default buildConfig({
     Pages,
   ],
   globals: [SiteSettings],
-  editor: lexicalEditor(),
+  editor: lexicalEditor({
+    features: ({ defaultFeatures }) => [
+      ...defaultFeatures,
+      FixedToolbarFeature(),
+      InlineToolbarFeature(),
+      HorizontalRuleFeature(),
+      TextStateFeature({
+        state: {
+          highlight: {
+            highlighted: {
+              label: 'Highlighted Text',
+              css: {
+                color: '#D97757',
+                'font-size': '20px',
+              },
+            },
+          },
+        },
+      }),
+      BlocksFeature({
+        blocks: [
+          {
+            slug: 'section',
+            labels: {
+              singular: 'Section',
+              plural: 'Sections',
+            },
+            fields: [
+              {
+                name: 'sectionTag',
+                type: 'text',
+                required: true,
+                admin: {
+                  description: 'Small header tag above the title (e.g. "CONTEXT")',
+                },
+              },
+              {
+                name: 'sectionTitle',
+                type: 'text',
+                required: true,
+                admin: {
+                  description: 'Section title (e.g. "A brief arrives. The work begins.")',
+                },
+              },
+              {
+                name: 'sectionBody',
+                type: 'richText',
+                editor: lexicalEditor(),
+                required: false,
+                admin: {
+                  description: 'Section body content',
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    ],
+  }),
   secret: process.env.PAYLOAD_SECRET || 'default-secret',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),

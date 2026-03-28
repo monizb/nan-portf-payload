@@ -1,4 +1,12 @@
 import type { CollectionConfig } from 'payload'
+import {
+  lexicalEditor,
+  BlocksFeature,
+  FixedToolbarFeature,
+  InlineToolbarFeature,
+  HorizontalRuleFeature,
+  TextStateFeature,
+} from '@payloadcms/richtext-lexical'
 
 export const CaseStudies: CollectionConfig = {
   slug: 'case-studies',
@@ -64,6 +72,70 @@ export const CaseStudies: CollectionConfig = {
     {
       name: 'content',
       type: 'richText',
+      editor: lexicalEditor({
+        features: ({ defaultFeatures }) => [
+          ...defaultFeatures,
+          FixedToolbarFeature(),
+          InlineToolbarFeature(),
+          HorizontalRuleFeature(),
+          TextStateFeature({
+            state: {
+              highlight: {
+                highlighted: {
+                  label: 'Highlighted Text',
+                  css: {
+                    color: '#D97757',
+                    'font-size': '20px',
+                  },
+                },
+              },
+            },
+          }),
+          BlocksFeature({
+            blocks: [
+              {
+                slug: 'section',
+                labels: {
+                  singular: 'Section',
+                  plural: 'Sections',
+                },
+                fields: [
+                  {
+                    name: 'sectionTag',
+                    type: 'text',
+                    required: true,
+                  },
+                  {
+                    name: 'sectionTitle',
+                    type: 'text',
+                    required: true,
+                  },
+                  {
+                    name: 'sectionBody',
+                    type: 'richText',
+                    editor: lexicalEditor(),
+                    required: false,
+                  },
+                ],
+              },
+              {
+                slug: 'highlightedText',
+                labels: {
+                  singular: 'Highlighted Text',
+                  plural: 'Highlighted Text',
+                },
+                fields: [
+                  {
+                    name: 'text',
+                    type: 'text',
+                    required: true,
+                  },
+                ],
+              },
+            ],
+          }),
+        ],
+      }),
       required: true,
     },
     {

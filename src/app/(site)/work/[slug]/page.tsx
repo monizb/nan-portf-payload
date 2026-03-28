@@ -88,8 +88,6 @@ export default async function CaseStudyPage({ params }: PageProps) {
       })
     : 'September 14, 2025'
 
-  const hiddenTexts = (study.hiddenHeadings || []).map((h) => h.headingText)
-
   const featuredImg = study.featuredImage &&
     typeof study.featuredImage === 'object' &&
     'url' in study.featuredImage
@@ -103,37 +101,39 @@ export default async function CaseStudyPage({ params }: PageProps) {
         <div className="max-w-350 mx-auto">
           <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-12">
             {/* Sticky sidebar */}
-            <aside className="hidden lg:block">
+            <aside className="hidden lg:block" style={{ paddingLeft: '100px' }}>
               <div className="sticky top-28">
-                <BlogSidebar hiddenHeadings={hiddenTexts} />
+                <BlogSidebar />
               </div>
             </aside>
 
             {/* Main content */}
-            <article className="min-w-0">
-              {/* Back button */}
-              <Link
-                href="/work"
-                className="inline-flex items-center gap-1.5 text-[13px] font-medium mb-8 hover:opacity-70 transition-opacity"
-                style={{ color: 'var(--color-terracotta)' }}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                  <path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Back to work
-              </Link>
+            <article className="min-w-0" style={{ paddingRight: '200px' }}>
+              {/* Back button - sticky */}
+              <div className="sticky top-28 z-10 pb-4" style={{ background: 'var(--color-white)' }}>
+                <Link
+                  href="/work"
+                  className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"
+                  style={{ color: '#D97757', fontSize: '16px', fontFamily: 'var(--font-body)' }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Back to work
+                </Link>
+              </div>
 
               {/* Title */}
-              <h1 className="text-3xl md:text-[2.75rem] leading-[1.12] tracking-[-0.025em] font-display mb-4">
+              <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
                 {study.title}
               </h1>
 
               {/* Date */}
-              <p className="text-[14px] text-gray-400 mb-10">{publishedDate}</p>
+              <p className="mb-10" style={{ color: '#252F3EAB', fontSize: '16px', fontFamily: 'var(--font-body)' }}>{publishedDate}</p>
 
               {/* Featured image */}
               {featuredImg && (
-                <div className="rounded-xl overflow-hidden mb-10 aspect-[16/9] relative">
+                <div className="rounded-xl overflow-hidden mb-10 relative" style={{ height: '531px' }}>
                   <Image
                     src={featuredImg.url}
                     alt={featuredImg.alt || study.title}

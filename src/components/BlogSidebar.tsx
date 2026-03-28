@@ -2,54 +2,44 @@
 
 import { useEffect, useState } from 'react'
 
-interface Heading {
+interface SectionEntry {
   id: string
   text: string
-  level: number
 }
 
-interface BlogSidebarProps {
-  hiddenHeadings?: string[]
-}
-
-export default function BlogSidebar({ hiddenHeadings = [] }: BlogSidebarProps) {
-  const [headings, setHeadings] = useState<Heading[]>([])
+export default function BlogSidebar() {
+  const [sections, setSections] = useState<SectionEntry[]>([])
   const [activeId, setActiveId] = useState<string>('')
 
   useEffect(() => {
-    // Extract headings from the blog content
+    // Extract section headers from blog-section blocks
     const contentEl = document.querySelector('.blog-content')
     if (!contentEl) return
 
-    const headingEls = contentEl.querySelectorAll('h2, h3')
-    const extracted: Heading[] = []
+    const sectionEls = contentEl.querySelectorAll('.blog-section')
+    const extracted: SectionEntry[] = []
 
-    headingEls.forEach((el) => {
-      const text = el.textContent || ''
-      // Skip if heading is in hidden list
-      if (hiddenHeadings.some((h) => text.includes(h))) return
+    sectionEls.forEach((el) => {
+      const tagEl = el.querySelector('.blog-section-tag')
+      const text = tagEl?.textContent || ''
+      if (!text) return
 
-      // Generate or use existing id
+      const id = el.id || text
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/(^-|-$)/g, '')
+
       if (!el.id) {
-        el.id = text
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '')
+        el.id = id
       }
 
-      extracted.push({
-        id: el.id,
-        text,
-        level: el.tagName === 'H2' ? 2 : 3,
-      })
+      extracted.push({ id, text })
     })
 
-    setHeadings(extracted)
+    setSections(extracted)
 
-    // Only observe headings that are visible in the sidebar
-    const visibleIds = new Set(extracted.map((h) => h.id))
+    const visibleIds = new Set(extracted.map((s) => s.id))
 
-    // Intersection observer for active heading
     const observer = new IntersectionObserver(
       (entries) => {
         for (const entry of entries) {
@@ -61,29 +51,28 @@ export default function BlogSidebar({ hiddenHeadings = [] }: BlogSidebarProps) {
       { rootMargin: '-100px 0px -60% 0px', threshold: 0 }
     )
 
-    headingEls.forEach((el) => {
+    sectionEls.forEach((el) => {
       if (visibleIds.has(el.id)) observer.observe(el)
     })
     return () => observer.disconnect()
-  }, [hiddenHeadings])
+  }, [])
 
-  if (headings.length === 0) return null
+  if (sections.length === 0) return null
 
   return (
     <nav className="space-y-1">
-      {headings.map((heading) => (
+      {sections.map((section) => (
         <a
-          key={heading.id}
-          href={`#${heading.id}`}
-          className={`sidebar-link block text-[13px] leading-relaxed py-1 border-l-2 transition-colors ${
-            heading.level === 3 ? 'pl-6' : 'pl-4'
-          } ${
-            activeId === heading.id
+          key={section.id}
+          href={`#${section.id}`}
+          className={`sidebar-link block text-[13px] leading-relaxed py-1 border-l-2 transition-colors pl-4 ${
+            activeId === section.id
               ? 'active font-medium'
               : 'border-l-transparent text-gray-500 hover:text-gray-700'
           }`}
+          style={{ fontFamily: 'var(--font-body)' }}
         >
-          {heading.text}
+          {section.text}
         </a>
       ))}
     </nav>
