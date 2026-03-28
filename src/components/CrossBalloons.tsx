@@ -20,6 +20,9 @@ const MOUSE_INFLUENCE = 0.12
 const MOUSE_RADIUS = 0.03
 const VELOCITY_DAMPING = 0.2
 const INITIAL_SPREAD = 4.6
+const COLLISION_SLOP = 0.04
+const COLLISION_PUSH = 0.65
+const MIN_COLLISION_DISTANCE = 0.0001
 
 // ─── Physics body ────────────────────────────────────────────────
 interface Body {
@@ -57,8 +60,8 @@ function createBody(index: number, seed: number): Body {
     velocity0: new THREE.Vector3(-px * 2, -py * 2, -pz * 2),
     radius,
     mass,
-    friction: 0.5,
-    restitution: 0.5,
+    friction: 0.7,
+    restitution: 0.12,
     frictionTot: 0,
     quaternion: new THREE.Quaternion(),
     inertia: mass * radius * radius * 0.4,
@@ -124,24 +127,36 @@ function simulatePhysics(
         body.frictionTot += fric
         other.frictionTot += fric
 
-        _normal.normalize()
-        _normal.multiplyScalar(0.5 * (dist - minDist))
-        _pos.sub(_normal)
-        _p1.add(_normal)
-        _normal.normalize()
+        if (dist > MIN_COLLISION_DISTANCE) {
+          _normal.multiplyScalar(1 / dist)
+        } else {
+          _normal.set(Math.cos(i + j), Math.sin(i * 1.7 + j), 0.25).normalize()
+        }
+
+        const overlap = minDist - dist
+        const separation = Math.max(overlap - COLLISION_SLOP, 0) * COLLISION_PUSH
+        if (separation > 0) {
+          const move1 = separation * (other.mass / (body.mass + other.mass))
+          const move2 = separation * (body.mass / (body.mass + other.mass))
+          _pos.addScaledVector(_normal, move1)
+          _p1.addScaledVector(_normal, -move2)
+        }
 
         const v1n = _vel.dot(_normal)
         const v2n = _v1.dot(_normal)
+        const relNormalVel = v1n - v2n
         const m1 = body.mass
         const m2 = other.mass
-        const cr1 = body.restitution
-        const cr2 = other.restitution
+        const restitution = Math.min(body.restitution, other.restitution)
 
-        const newV1 = (m1 * v1n + m2 * v2n - m2 * (v1n - v2n) * cr1) / (m1 + m2)
-        const newV2 = (m1 * v1n + m2 * v2n - m1 * (v2n - v1n) * cr2) / (m1 + m2)
+        if (relNormalVel < 0) {
+          const impulse = (-(1 + restitution) * relNormalVel) / ((1 / m1) + (1 / m2))
+          _vel.addScaledVector(_normal, impulse / m1)
+          _v1.addScaledVector(_normal, -impulse / m2)
+        }
 
-        _vel.addScaledVector(_normal, (newV1 - v1n) / (1 + fric))
-        _v1.addScaledVector(_normal, (newV2 - v2n) / (1 + fric))
+        _vel.multiplyScalar(1 - fric * 0.04)
+        _v1.multiplyScalar(1 - fric * 0.04)
 
         other.position.copy(_p1)
         other.velocity.copy(_v1)

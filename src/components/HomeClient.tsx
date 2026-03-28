@@ -14,13 +14,16 @@ interface HomeClientProps {
   glbUrl: string
 }
 
+const INTRO_SCROLL_ANIMATION_ENABLED = false
+
 export default function HomeClient({ children, glbUrl }: HomeClientProps) {
-  const [animationActive, setAnimationActive] = useState(true)
+  const [animationActive, setAnimationActive] = useState(INTRO_SCROLL_ANIMATION_ENABLED)
   const [AnimComponent, setAnimComponent] = useState<ComponentType<ScrollAnimationProps> | null>(null)
   const contentRef = useRef<HTMLDivElement>(null)
 
   // Load ScrollAnimation on client only — avoids next/dynamic Suspense hydration mismatch
   useEffect(() => {
+    if (!INTRO_SCROLL_ANIMATION_ENABLED) return
     import('@/components/ScrollAnimation').then((mod) => {
       setAnimComponent(() => mod.default)
     })
@@ -32,6 +35,7 @@ export default function HomeClient({ children, glbUrl }: HomeClientProps) {
 
   // When user scrolls up at the very top of content → return to animation
   useEffect(() => {
+    if (!INTRO_SCROLL_ANIMATION_ENABLED) return
     if (animationActive) return
 
     // Require sustained upward scroll before re-entering animation (prevents accidental trigger)
@@ -85,20 +89,20 @@ export default function HomeClient({ children, glbUrl }: HomeClientProps) {
   return (
     <>
       {/* Animation — loaded client-side only, no Suspense boundary */}
-      {AnimComponent ? (
+      {INTRO_SCROLL_ANIMATION_ENABLED && AnimComponent ? (
         <AnimComponent
           glbUrl={glbUrl}
           active={animationActive}
           onAnimationComplete={handleAnimationComplete}
         />
-      ) : (
+      ) : INTRO_SCROLL_ANIMATION_ENABLED ? (
         /* Static placeholder — identical on server & client, no hydration mismatch */
         <div className="fixed inset-0" style={{ background: '#D97757', zIndex: 100 }}>
           <div className="flex items-center justify-center h-screen">
             <div className="text-white text-sm tracking-widest animate-pulse">LOADING...</div>
           </div>
         </div>
-      )}
+      ) : null}
 
       {/* Main portfolio content — always in DOM, hidden during animation */}
       <div
