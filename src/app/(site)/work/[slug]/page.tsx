@@ -97,20 +97,20 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="pt-28 pb-20 px-6 lg:pl-[10%] lg:pr-[20%]">
-        <div>
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
-            {/* Sticky sidebar */}
-            <aside className="hidden lg:block">
-              <div className="sticky top-[76px]">
+      <main className="mt-28 h-[calc(100vh-7rem)] overflow-hidden px-6 lg:pl-[10%] lg:pr-[15%]">
+        <div className="h-full">
+          <div className="grid h-full grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
+            {/* Sidebar stays fixed while article column scrolls */}
+            <aside className="hidden lg:block self-start pt-2">
+              <div>
                 <BlogSidebar />
               </div>
             </aside>
 
             {/* Main content */}
-            <article className="min-w-0">
-              {/* Back button */}
-              <div className="mb-8">
+            <article className="min-w-0 h-full flex flex-col overflow-hidden">
+              {/* Back button stays outside scrollable content */}
+              <div className="py-2">
                 <Link
                   href="/work"
                   className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"
@@ -123,30 +123,32 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 </Link>
               </div>
 
-              {/* Title */}
-              <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
-                {study.title}
-              </h1>
+              <div className="blog-scroll-container min-h-0 flex-1 overflow-y-auto pt-6">
+                {/* Title */}
+                <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
+                  {study.title}
+                </h1>
 
-              {/* Date */}
-              <p className="mb-10" style={{ color: '#252F3EAB', fontSize: '16px', fontFamily: 'var(--font-body)' }}>{publishedDate}</p>
+                {/* Date */}
+                <p className="mb-10" style={{ color: '#252F3EAB', fontSize: '16px', fontFamily: 'var(--font-body)' }}>{publishedDate}</p>
 
-              {/* Featured image */}
-              {featuredImg && (
-                <div className="rounded-xl overflow-hidden mb-10 relative" style={{ height: '531px' }}>
-                  <Image
-                    src={featuredImg.url}
-                    alt={featuredImg.alt || study.title}
-                    fill
-                    className="object-cover"
-                    priority
-                    sizes="(max-width: 768px) 100vw, 720px"
-                  />
-                </div>
-              )}
+                {/* Featured image */}
+                {featuredImg && (
+                  <div className="rounded-xl overflow-hidden mb-10 relative" style={{ height: '531px' }}>
+                    <Image
+                      src={featuredImg.url}
+                      alt={featuredImg.alt || study.title}
+                      fill
+                      className="object-cover"
+                      priority
+                      sizes="(max-width: 768px) 100vw, 720px"
+                    />
+                  </div>
+                )}
 
-              {/* Rich text content */}
-              <RichTextRenderer content={study.content as Parameters<typeof RichTextRenderer>[0]['content']} />
+                {/* Rich text content */}
+                <RichTextRenderer content={study.content as Parameters<typeof RichTextRenderer>[0]['content']} />
+              </div>
             </article>
           </div>
         </div>

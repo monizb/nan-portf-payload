@@ -20,9 +20,10 @@ export default function BlogSidebar() {
   useEffect(() => {
     // Extract section headers from blog-section blocks
     const contentEl = document.querySelector('.blog-content')
-    if (!contentEl) return
+    const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
+    if (!contentEl || !scrollContainer) return
 
-    const sectionEls = contentEl.querySelectorAll('.blog-section')
+    const sectionEls = Array.from(contentEl.querySelectorAll<HTMLElement>('.blog-section'))
     const extracted: SectionEntry[] = []
 
     sectionEls.forEach((el) => {
@@ -46,25 +47,41 @@ export default function BlogSidebar() {
       setSections(extracted)
     })
 
-    const visibleIds = new Set(extracted.map((s) => s.id))
+    const updateActiveSection = () => {
+      const activationOffset = 24
+      const containerTop = scrollContainer.getBoundingClientRect().top
+      let currentId = ''
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting && visibleIds.has(entry.target.id)) {
-            setActiveId(entry.target.id)
-          }
+      for (const el of sectionEls) {
+        const rect = el.getBoundingClientRect()
+        if (rect.top - containerTop <= activationOffset) {
+          currentId = el.id
+        } else {
+          break
         }
-      },
-      { rootMargin: '-100px 0px -60% 0px', threshold: 0 }
-    )
+      }
 
-    sectionEls.forEach((el) => {
-      if (visibleIds.has(el.id)) observer.observe(el)
-    })
+      setActiveId((prev) => (prev === currentId ? prev : currentId))
+    }
+
+    let ticking = false
+    const onScroll = () => {
+      if (ticking) return
+      ticking = true
+      window.requestAnimationFrame(() => {
+        updateActiveSection()
+        ticking = false
+      })
+    }
+
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('resize', onScroll)
+    updateActiveSection()
+
     return () => {
       window.cancelAnimationFrame(rafId)
-      observer.disconnect()
+      scrollContainer.removeEventListener('scroll', onScroll)
+      window.removeEventListener('resize', onScroll)
     }
   }, [])
 
@@ -76,7 +93,20 @@ export default function BlogSidebar() {
         <a
           key={section.id}
           href={`#${section.id}`}
-          className={`sidebar-link relative block text-[13px] leading-[1.35] py-0.5 transition-colors pl-3.5 ${
+          onClick={(event) => {
+            event.preventDefault()
+            const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
+            const target = document.getElementById(section.id)
+            if (!target || !scrollContainer) return
+
+            const containerRect = scrollContainer.getBoundingClientRect()
+            const targetRect = target.getBoundingClientRect()
+            const nextScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 24
+
+            scrollContainer.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
+            setActiveId(section.id)
+          }}
+          className={`sidebar-link relative block text-[16px] leading-[1.35] py-0.5 transition-colors pl-2.5 ${
             activeId === section.id
               ? 'active font-medium'
               : 'text-gray-500 hover:text-gray-700'
