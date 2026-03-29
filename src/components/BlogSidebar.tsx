@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface SectionEntry {
   id: string
@@ -16,12 +16,13 @@ function toSentenceCase(text: string): string {
 export default function BlogSidebar() {
   const [sections, setSections] = useState<SectionEntry[]>([])
   const [activeId, setActiveId] = useState<string>('')
+  const pendingIdRef = useRef<string>('')
+  const pendingTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     // Extract section headers from blog-section blocks
     const contentEl = document.querySelector('.blog-content')
-    const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
-    if (!contentEl || !scrollContainer) return
+    if (!contentEl) return
 
     const sectionEls = Array.from(contentEl.querySelectorAll<HTMLElement>('.blog-section'))
     const extracted: SectionEntry[] = []
@@ -48,16 +49,29 @@ export default function BlogSidebar() {
     })
 
     const updateActiveSection = () => {
-      const activationOffset = 24
-      const containerTop = scrollContainer.getBoundingClientRect().top
+      const activationOffset = 160
       let currentId = ''
 
       for (const el of sectionEls) {
         const rect = el.getBoundingClientRect()
-        if (rect.top - containerTop <= activationOffset) {
+        if (rect.top <= activationOffset) {
           currentId = el.id
         } else {
           break
+        }
+      }
+
+      if (pendingIdRef.current) {
+        const pendingTarget = sectionEls.find((el) => el.id === pendingIdRef.current)
+        if (!pendingTarget) {
+          pendingIdRef.current = ''
+        } else {
+          const pendingRect = pendingTarget.getBoundingClientRect()
+          if (pendingRect.top <= activationOffset + 4) {
+            pendingIdRef.current = ''
+          } else {
+            currentId = pendingIdRef.current
+          }
         }
       }
 
@@ -74,13 +88,16 @@ export default function BlogSidebar() {
       })
     }
 
-    scrollContainer.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     updateActiveSection()
 
     return () => {
       window.cancelAnimationFrame(rafId)
-      scrollContainer.removeEventListener('scroll', onScroll)
+      if (pendingTimeoutRef.current !== null) {
+        window.clearTimeout(pendingTimeoutRef.current)
+      }
+      window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
   }, [])
@@ -95,16 +112,22 @@ export default function BlogSidebar() {
           href={`#${section.id}`}
           onClick={(event) => {
             event.preventDefault()
-            const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
             const target = document.getElementById(section.id)
-            if (!target || !scrollContainer) return
+            if (!target) return
 
-            const containerRect = scrollContainer.getBoundingClientRect()
-            const targetRect = target.getBoundingClientRect()
-            const nextScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 24
+            if (pendingTimeoutRef.current !== null) {
+              window.clearTimeout(pendingTimeoutRef.current)
+            }
 
-            scrollContainer.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
+            pendingIdRef.current = section.id
             setActiveId(section.id)
+
+            const nextScrollTop = target.getBoundingClientRect().top + window.scrollY - 160
+            window.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
+
+            pendingTimeoutRef.current = window.setTimeout(() => {
+              pendingIdRef.current = ''
+            }, 1200)
           }}
           className={`sidebar-link relative block text-[16px] leading-[1.35] py-0.5 transition-colors pl-2.5 ${
             activeId === section.id
@@ -116,7 +139,7 @@ export default function BlogSidebar() {
           {activeId === section.id && (
             <span
               aria-hidden="true"
-              className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full"
+              className="absolute left-[2px] top-1/2 -translate-y-1/2 h-4 w-[2px] rounded-full"
               style={{ background: 'var(--color-terracotta)' }}
             />
           )}

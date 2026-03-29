@@ -97,18 +97,18 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="mt-28 h-[calc(100vh-7rem)] overflow-hidden px-6 lg:pl-[10%] lg:pr-[15%]">
-        <div className="h-full">
-          <div className="grid h-full grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
+      <main className="pt-28 pb-20 px-6 lg:pl-[10%] lg:pr-[15%]">
+        <div>
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
             {/* Sidebar stays fixed while article column scrolls */}
             <aside className="hidden lg:block self-start pt-2">
-              <div>
+              <div className="sticky top-[130px]">
                 <BlogSidebar />
               </div>
             </aside>
 
             {/* Main content */}
-            <article className="min-w-0 h-full flex flex-col overflow-hidden">
+            <article className="min-w-0">
               {/* Back button stays outside scrollable content */}
               <div className="py-2">
                 <Link
@@ -123,7 +123,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 </Link>
               </div>
 
-              <div className="blog-scroll-container min-h-0 flex-1 overflow-y-auto pt-6">
+              <div className="pt-6">
                 {/* Title */}
                 <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
                   {study.title}
