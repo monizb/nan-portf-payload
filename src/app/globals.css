@@ -98,6 +98,18 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-body);
 }
 
+/* Hide inner scrollbar while allowing blog content scrolling */
+.blog-scroll-container {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.blog-scroll-container::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
 .blog-content h2 {
   font-family: var(--font-display);
   font-size: 1.75rem;

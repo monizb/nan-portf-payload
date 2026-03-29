@@ -23,7 +23,8 @@ export default function BlogSidebar() {
   useEffect(() => {
     // Extract section headers from blog-section blocks
     const contentEl = document.querySelector('.blog-content')
-    if (!contentEl) return
+    const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
+    if (!contentEl || !scrollContainer) return
 
     const sectionEls = Array.from(contentEl.querySelectorAll<HTMLElement>('.blog-section'))
     const extracted: SectionEntry[] = []
@@ -50,12 +51,13 @@ export default function BlogSidebar() {
     })
 
     const updateActiveSection = () => {
-      const activationOffset = 160
+      const activationOffset = 24
+      const containerTop = scrollContainer.getBoundingClientRect().top
       let currentId = ''
 
       for (const el of sectionEls) {
         const rect = el.getBoundingClientRect()
-        if (rect.top <= activationOffset) {
+        if (rect.top - containerTop <= activationOffset) {
           currentId = el.id
         } else {
           break
@@ -69,7 +71,7 @@ export default function BlogSidebar() {
           clearPendingScheduledRef.current = false
         } else {
           const pendingRect = pendingTarget.getBoundingClientRect()
-          if (pendingRect.top <= activationOffset) {
+          if (pendingRect.top - containerTop <= activationOffset) {
             currentId = pendingIdRef.current
 
             if (!clearPendingScheduledRef.current) {
@@ -98,7 +100,7 @@ export default function BlogSidebar() {
       })
     }
 
-    window.addEventListener('scroll', onScroll, { passive: true })
+    scrollContainer.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     updateActiveSection()
 
@@ -107,7 +109,7 @@ export default function BlogSidebar() {
       if (pendingTimeoutRef.current !== null) {
         window.clearTimeout(pendingTimeoutRef.current)
       }
-      window.removeEventListener('scroll', onScroll)
+      scrollContainer.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
   }, [])
@@ -122,8 +124,9 @@ export default function BlogSidebar() {
           href={`#${section.id}`}
           onClick={(event) => {
             event.preventDefault()
+            const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
             const target = document.getElementById(section.id)
-            if (!target) return
+            if (!target || !scrollContainer) return
 
             if (pendingTimeoutRef.current !== null) {
               window.clearTimeout(pendingTimeoutRef.current)
@@ -133,8 +136,11 @@ export default function BlogSidebar() {
             clearPendingScheduledRef.current = false
             setActiveId(section.id)
 
-            const nextScrollTop = target.getBoundingClientRect().top + window.scrollY - 160
-            window.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
+            const containerRect = scrollContainer.getBoundingClientRect()
+            const targetRect = target.getBoundingClientRect()
+            const nextScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 24
+
+            scrollContainer.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
 
             pendingTimeoutRef.current = window.setTimeout(() => {
               pendingIdRef.current = ''
