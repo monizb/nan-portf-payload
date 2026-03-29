@@ -15,13 +15,13 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md">
-      <nav className="max-w-350 mx-auto flex items-center justify-between px-6 py-5">
+      <nav className="flex items-center justify-between px-6 py-5 lg:pl-[10%] lg:pr-[20%]">
         <Link href="/" className="flex items-center gap-2.5 group">
           <span
             className="w-3 h-3 rounded-full"
             style={{ background: 'var(--color-terracotta)' }}
           />
-          <span className="text-[15px] font-medium tracking-[-0.01em]">
+          <span className="text-[16px] font-medium tracking-[-0.01em]">
             Nanditha C P
           </span>
         </Link>
@@ -31,7 +31,7 @@ export default function Navbar() {
             <Link
               key={link.href}
               href={link.href}
-              className={`text-[14px] font-medium transition-colors hover:text-gray-900 ${
+              className={`text-[16px] font-medium transition-colors hover:text-gray-900 ${
                 pathname === link.href ? 'text-gray-900' : 'text-gray-500'
               }`}
             >

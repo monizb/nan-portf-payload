@@ -97,20 +97,20 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="pt-28 pb-20 px-6">
-        <div className="max-w-350 mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-12">
+      <main className="pt-28 pb-20 px-6 lg:pl-[10%] lg:pr-[20%]">
+        <div>
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
             {/* Sticky sidebar */}
-            <aside className="hidden lg:block" style={{ paddingLeft: '100px' }}>
+            <aside className="hidden lg:block">
               <div className="sticky top-[76px]">
                 <BlogSidebar />
               </div>
             </aside>
 
             {/* Main content */}
-            <article className="min-w-0" style={{ paddingRight: '200px' }}>
-              {/* Back button - sticky */}
-              <div className="sticky top-[71px] z-10 pb-4" style={{ background: 'var(--color-white)' }}>
+            <article className="min-w-0">
+              {/* Back button */}
+              <div className="mb-8">
                 <Link
                   href="/work"
                   className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"
