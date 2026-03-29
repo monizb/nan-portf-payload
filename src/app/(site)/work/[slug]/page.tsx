@@ -110,7 +110,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
             {/* Main content */}
             <article className="min-w-0" style={{ paddingRight: '200px' }}>
               {/* Back button - sticky */}
-              <div className="sticky top-[76px] z-10 pb-4" style={{ background: 'var(--color-white)' }}>
+              <div className="sticky top-[71px] z-10 pb-4" style={{ background: 'var(--color-white)' }}>
                 <Link
                   href="/work"
                   className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"

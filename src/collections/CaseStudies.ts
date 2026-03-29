@@ -131,6 +131,24 @@ export const CaseStudies: CollectionConfig = {
                             },
                           },
                         }),
+                        BlocksFeature({
+                          blocks: [
+                            {
+                              slug: 'highlightedText',
+                              labels: {
+                                singular: 'Highlighted Text',
+                                plural: 'Highlighted Text',
+                              },
+                              fields: [
+                                {
+                                  name: 'text',
+                                  type: 'text',
+                                  required: true,
+                                },
+                              ],
+                            },
+                          ],
+                        }),
                       ],
                     }),
                     required: false,

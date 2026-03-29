@@ -131,7 +131,36 @@ h1, h2, h3, h4, h5, h6 {
   padding-left: 1.5rem;
 }
 
+.blog-content ul {
+  list-style-type: disc;
+}
+
+.blog-content ol {
+  list-style-type: decimal;
+}
+
+.blog-section-body ul, .blog-section-body ol {
+  margin-bottom: 12px;
+  padding-left: 1.5rem;
+}
+
+.blog-section-body ul {
+  list-style-type: disc;
+}
+
+.blog-section-body ol {
+  list-style-type: decimal;
+}
+
 .blog-content li {
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.75;
+  margin-bottom: 0.5rem;
+  color: #272727;
+}
+
+.blog-section-body li {
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.75;
