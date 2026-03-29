@@ -97,18 +97,18 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="pt-28 pb-20 px-6 lg:pl-[10%] lg:pr-[15%]">
+      <main className="pt-28 pb-20 px-6 lg:pl-[5%] lg:pr-[10%]">
         <div>
-          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-[10%]">
             {/* Sidebar stays fixed during page scroll */}
-            <aside className="hidden lg:block sticky top-[130px] self-start h-fit pt-2">
+            <aside className="hidden lg:block sticky top-[71px] self-start h-fit pt-2">
               <BlogSidebar />
             </aside>
 
             {/* Main content */}
             <article className="min-w-0 self-start">
               {/* Back button stays fixed during page scroll */}
-              <div className="sticky top-[73px] z-20 bg-white/95 backdrop-blur-sm py-2">
+              <div className="sticky top-[71px] z-20 bg-white/95 backdrop-blur-sm py-2">
                 <Link
                   href="/work"
                   className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"

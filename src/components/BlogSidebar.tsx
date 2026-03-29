@@ -18,6 +18,7 @@ export default function BlogSidebar() {
   const [activeId, setActiveId] = useState<string>('')
   const pendingIdRef = useRef<string>('')
   const pendingTimeoutRef = useRef<number | null>(null)
+  const clearPendingScheduledRef = useRef<boolean>(false)
 
   useEffect(() => {
     // Extract section headers from blog-section blocks
@@ -65,10 +66,19 @@ export default function BlogSidebar() {
         const pendingTarget = sectionEls.find((el) => el.id === pendingIdRef.current)
         if (!pendingTarget) {
           pendingIdRef.current = ''
+          clearPendingScheduledRef.current = false
         } else {
           const pendingRect = pendingTarget.getBoundingClientRect()
-          if (pendingRect.top <= activationOffset + 4) {
-            pendingIdRef.current = ''
+          if (pendingRect.top <= activationOffset) {
+            currentId = pendingIdRef.current
+
+            if (!clearPendingScheduledRef.current) {
+              clearPendingScheduledRef.current = true
+              window.requestAnimationFrame(() => {
+                pendingIdRef.current = ''
+                clearPendingScheduledRef.current = false
+              })
+            }
           } else {
             currentId = pendingIdRef.current
           }
@@ -120,6 +130,7 @@ export default function BlogSidebar() {
             }
 
             pendingIdRef.current = section.id
+            clearPendingScheduledRef.current = false
             setActiveId(section.id)
 
             const nextScrollTop = target.getBoundingClientRect().top + window.scrollY - 160

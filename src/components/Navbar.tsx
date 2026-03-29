@@ -15,7 +15,7 @@ export default function Navbar() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md">
-      <nav className="flex items-center justify-between px-6 py-5 lg:pl-[10%] lg:pr-[10%]">
+      <nav className="flex items-center justify-between px-6 py-5 lg:pl-[5%] lg:pr-[5%]">
         <Link href="/" className="flex items-center gap-2.5 group">
           <span
             className="w-3 h-3 rounded-full"
