@@ -45,6 +45,18 @@ type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 
 type MediaLike = { url: string; alt: string; width?: number; height?: number }
 
+type RootRenderContext = { rootChildren: LexicalNode[]; rootIndex: number }
+
+function getLastSectionRootIndex(children: LexicalNode[]): number {
+  for (let i = children.length - 1; i >= 0; i--) {
+    const n = children[i]
+    if (n.type !== 'block') continue
+    const f = n.fields as Record<string, unknown> | undefined
+    if (f?.blockType === 'section' || n.blockType === 'section') return i
+  }
+  return -1
+}
+
 function mediaFromUploadField(value: unknown): MediaLike | null {
   if (!value || typeof value !== 'object') return null
   const o = value as Record<string, unknown>
@@ -85,7 +97,7 @@ function renderText(node: LexicalNode): React.ReactNode {
   return text
 }
 
-function renderNode(node: LexicalNode, index: number): React.ReactNode {
+function renderNode(node: LexicalNode, index: number, rootCtx?: RootRenderContext): React.ReactNode {
   const children = node.children?.map((child, i) => renderNode(child, i))
 
   switch (node.type) {
@@ -161,6 +173,11 @@ function renderNode(node: LexicalNode, index: number): React.ReactNode {
           .toLowerCase()
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/(^-|-$)/g, '')
+        const lastSectionIdx = rootCtx?.rootChildren ? getLastSectionRootIndex(rootCtx.rootChildren) : -1
+        const hideTrailingDivider =
+          rootCtx !== undefined &&
+          lastSectionIdx >= 0 &&
+          rootCtx.rootIndex === lastSectionIdx
         return (
           <div key={index} className="blog-section" data-section-tag={sectionTag} id={`section-${sectionId}`}>
             <div className="blog-section-tag">{sectionTag}</div>
@@ -170,7 +187,7 @@ function renderNode(node: LexicalNode, index: number): React.ReactNode {
                 {sectionBody.root.children.map((child, ci) => renderNode(child, ci))}
               </div>
             )}
-            <hr className="blog-section-divider" />
+            {!hideTrailingDivider && <hr className="blog-section-divider" />}
           </div>
         )
       }
@@ -239,7 +256,9 @@ export default function RichTextRenderer({ content }: RichTextRendererProps) {
 
   return (
     <div className="blog-content">
-      {content.root.children.map((node, i) => renderNode(node, i))}
+      {content.root.children.map((node, i) =>
+        renderNode(node, i, { rootChildren: content.root.children, rootIndex: i }),
+      )}
     </div>
   )
 }

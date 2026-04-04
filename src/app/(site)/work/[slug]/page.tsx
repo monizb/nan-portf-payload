@@ -4,7 +4,6 @@ import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
 import BlogSidebar from '@/components/BlogSidebar'
 import RichTextRenderer from '@/components/RichTextRenderer'
-import Link from 'next/link'
 import Image from 'next/image'
 import type { Metadata } from 'next'
 
@@ -97,58 +96,34 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="mt-16 h-[calc(100vh-4rem)] overflow-hidden px-6 lg:pl-[5%] lg:pr-[10%]">
-        <div className="h-full">
-          <div className="grid h-full grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-[10%]">
-            {/* Sidebar stays in place while only blog content scrolls */}
-            <aside className="hidden lg:block self-start h-fit">
-              <BlogSidebar />
-            </aside>
+      <main className="pt-14 pb-16 px-6 lg:pl-[5%] lg:pr-[10%]">
+        <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[280px_1fr] lg:gap-[10%]">
+          <aside className="hidden lg:block lg:sticky lg:top-14 lg:self-start">
+            <BlogSidebar />
+          </aside>
 
-            {/* Main content */}
-            <article className="min-w-0 h-full self-start flex flex-col overflow-hidden">
-              {/* Back button remains in place above the scrolling content */}
-              <div className="pb-2 pt-1">
-                <Link
-                  href="/work"
-                  className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"
-                  style={{ color: '#D97757', fontSize: '16px', fontFamily: 'var(--font-body)' }}
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <path d="M13 7H1M6 2L1 7l5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                  Back to work
-                </Link>
+          <article className="min-w-0">
+            <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
+              {study.title}
+            </h1>
+
+            <p className="mb-10" style={{ color: '#252F3EAB', fontSize: '16px', fontFamily: 'var(--font-body)' }}>{publishedDate}</p>
+
+            {featuredImg && (
+              <div className="rounded-xl overflow-hidden mb-10 relative" style={{ height: '531px' }}>
+                <Image
+                  src={featuredImg.url}
+                  alt={featuredImg.alt || study.title}
+                  fill
+                  className="object-cover"
+                  priority
+                  sizes="(max-width: 768px) 100vw, 720px"
+                />
               </div>
+            )}
 
-              <div className="blog-scroll-container min-h-0 flex-1 overflow-y-auto pt-3">
-                {/* Title */}
-                <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
-                  {study.title}
-                </h1>
-
-                {/* Date */}
-                <p className="mb-10" style={{ color: '#252F3EAB', fontSize: '16px', fontFamily: 'var(--font-body)' }}>{publishedDate}</p>
-
-                {/* Featured image */}
-                {featuredImg && (
-                  <div className="rounded-xl overflow-hidden mb-10 relative" style={{ height: '531px' }}>
-                    <Image
-                      src={featuredImg.url}
-                      alt={featuredImg.alt || study.title}
-                      fill
-                      className="object-cover"
-                      priority
-                      sizes="(max-width: 768px) 100vw, 720px"
-                    />
-                  </div>
-                )}
-
-                {/* Rich text content */}
-                <RichTextRenderer content={study.content as Parameters<typeof RichTextRenderer>[0]['content']} />
-              </div>
-            </article>
-          </div>
+            <RichTextRenderer content={study.content as Parameters<typeof RichTextRenderer>[0]['content']} />
+          </article>
         </div>
       </main>
       <Footer />

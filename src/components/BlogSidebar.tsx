@@ -7,6 +7,9 @@ interface SectionEntry {
   text: string
 }
 
+/** Viewport offset below fixed header when highlighting / scrolling to a section (px). */
+const SECTION_VIEW_OFFSET = 80
+
 function toSentenceCase(text: string): string {
   const normalized = text.trim().toLowerCase()
   if (!normalized) return normalized
@@ -21,10 +24,8 @@ export default function BlogSidebar() {
   const clearPendingScheduledRef = useRef<boolean>(false)
 
   useEffect(() => {
-    // Extract section headers from blog-section blocks
     const contentEl = document.querySelector('.blog-content')
-    const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
-    if (!contentEl || !scrollContainer) return
+    if (!contentEl) return
 
     const sectionEls = Array.from(contentEl.querySelectorAll<HTMLElement>('.blog-section'))
     const extracted: SectionEntry[] = []
@@ -51,13 +52,11 @@ export default function BlogSidebar() {
     })
 
     const updateActiveSection = () => {
-      const activationOffset = 24
-      const containerTop = scrollContainer.getBoundingClientRect().top
       let currentId = ''
 
       for (const el of sectionEls) {
         const rect = el.getBoundingClientRect()
-        if (rect.top - containerTop <= activationOffset) {
+        if (rect.top <= SECTION_VIEW_OFFSET) {
           currentId = el.id
         } else {
           break
@@ -71,7 +70,7 @@ export default function BlogSidebar() {
           clearPendingScheduledRef.current = false
         } else {
           const pendingRect = pendingTarget.getBoundingClientRect()
-          if (pendingRect.top - containerTop <= activationOffset) {
+          if (pendingRect.top <= SECTION_VIEW_OFFSET) {
             currentId = pendingIdRef.current
 
             if (!clearPendingScheduledRef.current) {
@@ -100,7 +99,7 @@ export default function BlogSidebar() {
       })
     }
 
-    scrollContainer.addEventListener('scroll', onScroll, { passive: true })
+    window.addEventListener('scroll', onScroll, { passive: true })
     window.addEventListener('resize', onScroll)
     updateActiveSection()
 
@@ -109,7 +108,7 @@ export default function BlogSidebar() {
       if (pendingTimeoutRef.current !== null) {
         window.clearTimeout(pendingTimeoutRef.current)
       }
-      scrollContainer.removeEventListener('scroll', onScroll)
+      window.removeEventListener('scroll', onScroll)
       window.removeEventListener('resize', onScroll)
     }
   }, [])
@@ -124,9 +123,8 @@ export default function BlogSidebar() {
           href={`#${section.id}`}
           onClick={(event) => {
             event.preventDefault()
-            const scrollContainer = document.querySelector('.blog-scroll-container') as HTMLElement | null
             const target = document.getElementById(section.id)
-            if (!target || !scrollContainer) return
+            if (!target) return
 
             if (pendingTimeoutRef.current !== null) {
               window.clearTimeout(pendingTimeoutRef.current)
@@ -136,11 +134,8 @@ export default function BlogSidebar() {
             clearPendingScheduledRef.current = false
             setActiveId(section.id)
 
-            const containerRect = scrollContainer.getBoundingClientRect()
-            const targetRect = target.getBoundingClientRect()
-            const nextScrollTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 24
-
-            scrollContainer.scrollTo({ top: nextScrollTop, behavior: 'smooth' })
+            const y = target.getBoundingClientRect().top + window.scrollY - SECTION_VIEW_OFFSET
+            window.scrollTo({ top: Math.max(0, y), behavior: 'smooth' })
 
             pendingTimeoutRef.current = window.setTimeout(() => {
               pendingIdRef.current = ''
