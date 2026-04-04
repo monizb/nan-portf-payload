@@ -71,7 +71,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
       collection: 'case-studies',
       where: { slug: { equals: slug }, status: { equals: 'published' } },
       limit: 1,
-      depth: 1,
+      depth: 2,
     })
     study = (result.docs[0] as unknown as CaseStudy) ?? null
   } catch {
@@ -97,18 +97,18 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="mt-28 h-[calc(100vh-7rem)] overflow-hidden px-6 lg:pl-[5%] lg:pr-[10%]">
+      <main className="mt-16 h-[calc(100vh-4rem)] overflow-hidden px-6 lg:pl-[5%] lg:pr-[10%]">
         <div className="h-full">
           <div className="grid h-full grid-cols-1 lg:grid-cols-[280px_1fr] gap-10 lg:gap-[10%]">
             {/* Sidebar stays in place while only blog content scrolls */}
-            <aside className="hidden lg:block self-start h-fit pt-2">
+            <aside className="hidden lg:block self-start h-fit">
               <BlogSidebar />
             </aside>
 
             {/* Main content */}
             <article className="min-w-0 h-full self-start flex flex-col overflow-hidden">
               {/* Back button remains in place above the scrolling content */}
-              <div className="py-2">
+              <div className="pb-2 pt-1">
                 <Link
                   href="/work"
                   className="inline-flex items-center gap-1.5 font-medium hover:opacity-70 transition-opacity"
@@ -121,7 +121,7 @@ export default async function CaseStudyPage({ params }: PageProps) {
                 </Link>
               </div>
 
-              <div className="blog-scroll-container min-h-0 flex-1 overflow-y-auto pt-6">
+              <div className="blog-scroll-container min-h-0 flex-1 overflow-y-auto pt-3">
                 {/* Title */}
                 <h1 className="leading-[1.12] tracking-[-0.025em] font-display mb-4" style={{ fontSize: '51px' }}>
                   {study.title}

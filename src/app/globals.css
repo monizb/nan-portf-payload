@@ -186,6 +186,13 @@ h1, h2, h3, h4, h5, h6 {
   width: 100%;
 }
 
+@media (min-width: 768px) {
+  .blog-content .two-column-image-row img {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
 .blog-content blockquote {
   border-left: 3px solid var(--color-terracotta);
   padding-left: 1.5rem;

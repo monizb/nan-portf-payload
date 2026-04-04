@@ -19,6 +19,7 @@ import { Media } from './collections/Media'
 import { CaseStudies } from './collections/CaseStudies'
 import { Pages } from './collections/Pages'
 import { SiteSettings } from './globals/SiteSettings'
+import { twoColumnImageBlock } from './lexical/twoColumnImageBlock'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -146,6 +147,7 @@ export default buildConfig({
               },
             ],
           },
+          twoColumnImageBlock,
         ],
       }),
     ],

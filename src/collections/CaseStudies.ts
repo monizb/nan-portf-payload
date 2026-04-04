@@ -8,6 +8,8 @@ import {
   TextStateFeature,
 } from '@payloadcms/richtext-lexical'
 
+import { twoColumnImageBlock } from '@/lexical/twoColumnImageBlock'
+
 export const CaseStudies: CollectionConfig = {
   slug: 'case-studies',
   admin: {
@@ -147,6 +149,7 @@ export const CaseStudies: CollectionConfig = {
                                 },
                               ],
                             },
+                            twoColumnImageBlock,
                           ],
                         }),
                       ],
@@ -169,6 +172,7 @@ export const CaseStudies: CollectionConfig = {
                   },
                 ],
               },
+              twoColumnImageBlock,
             ],
           }),
         ],

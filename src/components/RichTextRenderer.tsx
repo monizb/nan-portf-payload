@@ -43,6 +43,21 @@ type LexicalContent = {
 
 type HeadingTag = 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
 
+type MediaLike = { url: string; alt: string; width?: number; height?: number }
+
+function mediaFromUploadField(value: unknown): MediaLike | null {
+  if (!value || typeof value !== 'object') return null
+  const o = value as Record<string, unknown>
+  const url = typeof o.url === 'string' ? o.url : null
+  if (!url) return null
+  return {
+    url,
+    alt: typeof o.alt === 'string' ? o.alt : '',
+    width: typeof o.width === 'number' ? o.width : undefined,
+    height: typeof o.height === 'number' ? o.height : undefined,
+  }
+}
+
 function toHeadingTag(tag?: string): HeadingTag {
   if (tag === 'h1' || tag === 'h2' || tag === 'h3' || tag === 'h4' || tag === 'h5' || tag === 'h6') {
     return tag
@@ -162,6 +177,48 @@ function renderNode(node: LexicalNode, index: number): React.ReactNode {
       if (blockFields?.blockType === 'highlightedText' || node.blockType === 'highlightedText') {
         const highlightedText = (blockFields?.text as string) || ''
         return <p key={index} className="highlighted-text">{highlightedText}</p>
+      }
+      if (blockFields?.blockType === 'twoColumnImage' || node.blockType === 'twoColumnImage') {
+        const left = mediaFromUploadField(blockFields?.leftImage)
+        const right = mediaFromUploadField(blockFields?.rightImage)
+        if (!left && !right) return null
+
+        const colLeftHidden = !left && right ? 'hidden md:block' : ''
+        const colRightHidden = left && !right ? 'hidden md:block' : ''
+
+        return (
+          <div
+            key={index}
+            className="two-column-image-row grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 mb-5 md:mt-0"
+          >
+            <div className={`min-w-0 ${colLeftHidden}`}>
+              {left && (
+                <figure className="m-0">
+                  <Image
+                    src={left.url}
+                    alt={left.alt}
+                    width={left.width || 800}
+                    height={left.height || 450}
+                    className="rounded-xl w-full"
+                  />
+                </figure>
+              )}
+            </div>
+            <div className={`min-w-0 ${colRightHidden}`}>
+              {right && (
+                <figure className="m-0">
+                  <Image
+                    src={right.url}
+                    alt={right.alt}
+                    width={right.width || 800}
+                    height={right.height || 450}
+                    className="rounded-xl w-full"
+                  />
+                </figure>
+              )}
+            </div>
+          </div>
+        )
       }
       if (children) return <React.Fragment key={index}>{children}</React.Fragment>
       return null
