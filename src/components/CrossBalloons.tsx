@@ -2,27 +2,31 @@
 
 import { useRef, useMemo, useEffect } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Environment } from '@react-three/drei'
 import * as THREE from 'three'
+
+const BALL_COLOR = '#F0EDE8'
+const ICOSA_GREY = '#9A9B9F'
 
 // ─── Configuration ───────────────────────────────────────────────
 const SHAPE_GROUPS = [
-  { type: 'sphere' as const, count: 5, color: '#D97757', roughness: 0.12, metalness: 0.5 },   // orange metal
-  { type: 'sphere' as const, count: 5, color: '#E8915A', roughness: 0.45, metalness: 0.0 },   // orange plastic
-  { type: 'sphere' as const, count: 5, color: '#F0EDE8', roughness: 0.95, metalness: 0.0 },   // white chalk
-  { type: 'sphere' as const, count: 5, color: '#FAFAFA', roughness: 0.05, metalness: 0.15 },  // white shiny
-  { type: 'hexagon' as const, count: 5, color: '#D97757', roughness: 0.8, metalness: 0.0 },   // black matte
-  { type: 'hexagon' as const, count: 5, color: '#D97757', roughness: 0.05, metalness: 0.6 },  // black glossy
+  { type: 'sphere' as const, count: 4, color: BALL_COLOR, roughness: 0.93, metalness: 0 },
+  { type: 'sphere' as const, count: 4, color: BALL_COLOR, roughness: 0.38, metalness: 0.42 },
+  { type: 'icosahedron' as const, count: 14, color: ICOSA_GREY, roughness: 0.88, metalness: 0 },
+  { type: 'icosahedron' as const, count: 14, color: ICOSA_GREY, roughness: 0.42, metalness: 0.38 },
 ]
 const TOTAL = SHAPE_GROUPS.reduce((sum, g) => sum + g.count, 0)
-const GRAVITY_FACTOR = 38
-const MOUSE_PUSH_FORCE = 0.15
-const MOUSE_INFLUENCE = 0.12
-const MOUSE_RADIUS = 0.03
+const BODY_RADIUS = 0.52
+const GRAVITY_FACTOR = 26
+const MOUSE_PUSH_FORCE = 0.42
+const MOUSE_INFLUENCE = 0.32
+const MOUSE_RADIUS = 0.09
 const VELOCITY_DAMPING = 0.2
-const INITIAL_SPREAD = 4.6
-const COLLISION_SLOP = 0.04
-const COLLISION_PUSH = 0.65
+const INITIAL_SPREAD = 8.2
+const COLLISION_SLOP = 0.015
+const COLLISION_PUSH = 1.05
 const MIN_COLLISION_DISTANCE = 0.0001
+const OVERLAP_RELAX_ITERS = 4
 
 // ─── Physics body ────────────────────────────────────────────────
 interface Body {
@@ -46,10 +50,10 @@ function createBody(index: number, seed: number): Body {
   }
   const px = (rand(index * 3) - 0.5) * INITIAL_SPREAD
   const py = (rand(index * 3 + 1) - 0.5) * INITIAL_SPREAD
-  const pz = (rand(index * 3 + 2) - 0.5) * 3.2
+  const pz = (rand(index * 3 + 2) - 0.5) * (INITIAL_SPREAD * 0.42)
 
-  const radius = 0.72 + rand(index * 7) * 0.55
-  const density = 0.8 + rand(index * 11) * 0.4
+  const radius = BODY_RADIUS
+  const density = 0.85 + rand(index * 11) * 0.2
   const volume = Math.PI * radius * 1.333
   const mass = volume * radius * radius * density
 
@@ -60,8 +64,8 @@ function createBody(index: number, seed: number): Body {
     velocity0: new THREE.Vector3(-px * 2, -py * 2, -pz * 2),
     radius,
     mass,
-    friction: 0.7,
-    restitution: 0.12,
+    friction: 0.65,
+    restitution: 0.22,
     frictionTot: 0,
     quaternion: new THREE.Quaternion(),
     inertia: mass * radius * radius * 0.4,
@@ -80,6 +84,32 @@ const _normal = new THREE.Vector3()
 const _vel = new THREE.Vector3()
 const _pos = new THREE.Vector3()
 const _q = new THREE.Quaternion()
+const _sepN = new THREE.Vector3()
+
+function relaxOverlaps(bodies: Body[]) {
+  for (let iter = 0; iter < OVERLAP_RELAX_ITERS; iter++) {
+    for (let i = 0; i < bodies.length; i++) {
+      for (let j = i + 1; j < bodies.length; j++) {
+        const a = bodies[i]
+        const b = bodies[j]
+        _sepN.copy(a.position).sub(b.position)
+        const dist = _sepN.length()
+        const minDist = a.radius + b.radius
+        if (dist >= minDist) continue
+        if (dist > MIN_COLLISION_DISTANCE) {
+          _sepN.multiplyScalar(1 / dist)
+        } else {
+          _sepN.set(Math.cos(i * 2.1 + j), Math.sin(i + j * 1.7), 0.35).normalize()
+        }
+        const overlap = minDist - dist
+        const push = overlap * 0.55
+        const inv = 1 / (a.mass + b.mass)
+        a.position.addScaledVector(_sepN, push * b.mass * inv)
+        b.position.addScaledVector(_sepN, -push * a.mass * inv)
+      }
+    }
+  }
+}
 
 function simulatePhysics(
   bodies: Body[],
@@ -203,6 +233,8 @@ function simulatePhysics(
     body.position.addScaledVector(body.velocity, dt)
     body.velocity.multiplyScalar(Math.pow(VELOCITY_DAMPING, dt))
   }
+
+  relaxOverlaps(bodies)
 }
 
 // ─── Instanced 3D shapes ─────────────────────────────────────────
@@ -214,9 +246,8 @@ function ShapeInstances() {
   const mouseNDC = useRef({ x: 0, y: 0 })
   const isFirstFrame = useRef(true)
 
-  const hexGeom = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.5, 0.5, 0.5, 6)
-    g.computeVertexNormals()
+  const icosaGeom = useMemo(() => {
+    const g = new THREE.IcosahedronGeometry(0.5, 0)
     return g
   }, [])
   const sphereGeom = useMemo(() => new THREE.SphereGeometry(0.5, 32, 20), [])
@@ -244,6 +275,8 @@ function ShapeInstances() {
       color: g.color,
       roughness: g.roughness,
       metalness: g.metalness,
+      flatShading: g.type === 'icosahedron',
+      envMapIntensity: g.metalness > 0.15 ? 0.38 : 0.12,
     }))
   , [])
 
@@ -297,7 +330,7 @@ function ShapeInstances() {
           ref={(mesh: THREE.InstancedMesh | null) => {
             if (mesh) meshRefs.current.set(gi, mesh)
           }}
-          args={[group.type === 'hexagon' ? hexGeom : sphereGeom, materials[gi], group.count]}
+          args={[group.type === 'icosahedron' ? icosaGeom : sphereGeom, materials[gi], group.count]}
           frustumCulled={false}
         />
       ))}
@@ -315,17 +348,19 @@ function Scene() {
   useFrame((state) => {
     if (!startTime.current) return
     const elapsed = (Date.now() - startTime.current) / 1000
-    const targetZ = 14 - Math.min(elapsed / 2, 1) * 3.5
+    const targetZ = 17.5 - Math.min(elapsed / 2, 1) * 2.8
     state.camera.position.z += (targetZ - state.camera.position.z) * 0.03
   })
 
   return (
     <>
-      <ambientLight intensity={0.5} />
-      <directionalLight position={[10, 10, 5]} intensity={1.4} />
-      <directionalLight position={[-5, -5, 3]} intensity={0.5} />
-      <pointLight position={[0, 0, 8]} intensity={0.6} />
-      <pointLight position={[-5, 3, 4]} intensity={0.3} />
+      <color attach="background" args={['#151618']} />
+      <Environment preset="city" environmentIntensity={0.28} />
+      <ambientLight intensity={0.42} />
+      <hemisphereLight args={['#c8c8cc', '#151618', 0.55]} />
+      <directionalLight position={[8, 12, 6]} intensity={0.85} />
+      <directionalLight position={[-6, -4, 4]} intensity={0.35} />
+      <pointLight position={[0, 0, 10]} intensity={0.35} decay={2} distance={40} />
       <ShapeInstances />
     </>
   )
@@ -336,7 +371,7 @@ export default function CrossBalloons() {
   return (
     <div
       className="w-full rounded-2xl overflow-hidden select-none"
-      style={{ aspectRatio: '16/9', background: '#111' }}
+      style={{ aspectRatio: '16/9', background: '#151618' }}
     >
       <Canvas
         gl={{
@@ -345,10 +380,9 @@ export default function CrossBalloons() {
           powerPreference: 'high-performance',
         }}
         dpr={[1, 1.5]}
-        camera={{ fov: 25, near: 0.1, far: 100 }}
+        camera={{ position: [0, 0, 18], fov: 30, near: 0.1, far: 120 }}
         style={{ width: '100%', height: '100%' }}
       >
-        <color attach="background" args={['#111']} />
         <Scene />
       </Canvas>
     </div>
