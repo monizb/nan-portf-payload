@@ -96,9 +96,9 @@ export default async function CaseStudyPage({ params }: PageProps) {
   return (
     <>
       <Navbar />
-      <main className="pt-14 pb-16 px-6 lg:pl-[5%] lg:pr-[10%]">
+      <main className="pt-20 pb-16 px-6 lg:pl-[5%] lg:pr-[10%]">
         <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[280px_1fr] lg:gap-[10%]">
-          <aside className="hidden lg:block lg:sticky lg:top-14 lg:self-start">
+          <aside className="hidden lg:block lg:sticky lg:top-20 lg:self-start">
             <BlogSidebar />
           </aside>
 
