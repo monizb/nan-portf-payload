@@ -13,13 +13,13 @@ import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
 import { CloudflareContext, getCloudflareContext } from '@opennextjs/cloudflare'
 import { GetPlatformProxyOptions } from 'wrangler'
+import { r2Storage } from '@payloadcms/storage-r2'
 
 import { Media } from './collections/Media'
 import { CaseStudies } from './collections/CaseStudies'
 import { Pages } from './collections/Pages'
 import { SiteSettings } from './globals/SiteSettings'
 import { twoColumnImageBlock } from './lexical/twoColumnImageBlock'
-import { kvStorage } from './lib/kvStorage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -159,9 +159,9 @@ export default buildConfig({
   db: sqliteD1Adapter({ binding: cloudflare.env.D1 }),
   logger: isProduction ? cloudflareLogger : undefined,
   plugins: [
-    kvStorage({
-      kv: cloudflare.env.MEDIA_KV,
-      collections: ['media'],
+    r2Storage({
+      bucket: cloudflare.env.R2,
+      collections: { media: true },
     }),
   ],
 })

@@ -10,11 +10,9 @@
     "seed": "npx tsx src/scripts/seed.ts",
     "generate:types": "payload generate:types",
     "deploy": "npm run deploy:database && npm run deploy:app",
-    "deploy:app": "npm run media:manifest && opennextjs-cloudflare build && npm run fix:og-wasm && opennextjs-cloudflare deploy",
+    "deploy:app": "opennextjs-cloudflare build && npm run fix:og-wasm && opennextjs-cloudflare deploy",
     "fix:og-wasm": "cp node_modules/next/dist/compiled/@vercel/og/yoga.wasm .open-next/server-functions/default/node_modules/next/dist/compiled/@vercel/og/",
-    "deploy:database": "cross-env NODE_ENV=production PAYLOAD_SECRET=ignore payload migrate && npx wrangler d1 execute D1 --command 'PRAGMA optimize' --remote",
-    "media:pull": "node src/scripts/pull-media.mjs",
-    "media:manifest": "node src/scripts/media-manifest.mjs"
+    "deploy:database": "cross-env NODE_ENV=production PAYLOAD_SECRET=ignore payload migrate && npx wrangler d1 execute D1 --command 'PRAGMA optimize' --remote"
   },
   "dependencies": {
     "@payloadcms/db-d1-sqlite": "^3.80.0",

@@ -19,10 +19,10 @@
       "remote": true
     }
   ],
-  "kv_namespaces": [
+  "r2_buckets": [
     {
-      "binding": "MEDIA_KV",
-      "id": "4d0b2b5fa01841e4bd1445538f6eb25d"
+      "binding": "R2",
+      "bucket_name": "nanditha-portfolio-media"
     }
   ],
   "vars": {
