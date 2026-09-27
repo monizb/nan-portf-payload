@@ -3,6 +3,13 @@ import type { Config } from 'payload'
 import { cloudStoragePlugin } from '@payloadcms/plugin-cloud-storage'
 import type { Adapter } from '@payloadcms/plugin-cloud-storage/types'
 import { sanitizeFilename } from 'payload/shared'
+import staticMediaList from './staticMedia.json'
+
+// Files committed to public/media are served as Workers static assets at /media/<name>
+// (free, no Worker invocation). KV is only used for files uploaded after the last deploy.
+// Refresh with `npm run media:pull` (or `npm run media:manifest` after adding files by hand).
+const staticMedia = new Set<string>(staticMediaList)
+const staticMediaURL = (filename: string) => `/media/${encodeURIComponent(filename)}`
 
 // Media storage backed by Workers KV. Used instead of R2 so the site runs on the
 // Workers Free plan without an R2 subscription. KV values are capped at 25 MiB.
@@ -29,7 +36,14 @@ const kvAdapter =
     },
     staticHandler: async (req, { params: { filename } }) => {
       try {
-        const key = path.posix.join(prefix, sanitizeFilename(filename))
+        const safeName = sanitizeFilename(filename)
+        if (staticMedia.has(safeName)) {
+          return new Response(null, {
+            status: 301,
+            headers: { Location: staticMediaURL(safeName), 'Cache-Control': 'public, max-age=86400' },
+          })
+        }
+        const key = path.posix.join(prefix, safeName)
         const { value, metadata } = await kv.getWithMetadata<Metadata>(key, {
           type: 'stream',
           cacheTtl: 86400,
@@ -70,6 +84,17 @@ export const kvStorage =
       ),
     }
     return cloudStoragePlugin({
-      collections: Object.fromEntries(collections.map((slug) => [slug, { adapter }])),
+      collections: Object.fromEntries(
+        collections.map((slug) => [
+          slug,
+          {
+            adapter,
+            generateFileURL: ({ filename, prefix }) =>
+              !prefix && staticMedia.has(filename)
+                ? staticMediaURL(filename)
+                : `/api/${slug}/file/${encodeURIComponent(filename)}`,
+          },
+        ]),
+      ),
     })(config)
   }
